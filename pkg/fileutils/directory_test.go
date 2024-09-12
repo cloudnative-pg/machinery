@@ -28,7 +28,11 @@ import (
 )
 
 var _ = Describe("Size probe functions", func() {
-	testFileName := path.Join(tempDir1, "_test_")
+	var testFileName string
+
+	BeforeEach(func() {
+		testFileName = path.Join(tempDir1, "_test_")
+	})
 
 	AfterEach(func() {
 		err := RemoveFile(testFileName)

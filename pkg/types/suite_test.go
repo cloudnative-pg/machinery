@@ -14,17 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package fileutils
+package types
 
 import (
-	"os"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
-
-var tempDir1, tempDir2, tempDir3 string
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
@@ -32,18 +29,5 @@ var tempDir1, tempDir2, tempDir3 string
 func TestFileUtils(t *testing.T) {
 	RegisterFailHandler(Fail)
 
-	RunSpecs(t, "File Utilities Suite")
+	RunSpecs(t, "Types Suite")
 }
-
-var _ = BeforeSuite(func() {
-	var err error
-	tempDir1, err = os.MkdirTemp(os.TempDir(), "fileutils1_")
-	Expect(err).ToNot(HaveOccurred())
-	tempDir2, err = os.MkdirTemp(os.TempDir(), "fileutils2_")
-	Expect(err).ToNot(HaveOccurred())
-	tempDir3, err = os.MkdirTemp(os.TempDir(), "fileutils3_")
-	Expect(err).ToNot(HaveOccurred())
-})
-
-var _ = AfterSuite(func() {
-})
