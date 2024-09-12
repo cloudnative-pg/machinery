@@ -1,4 +1,4 @@
-module github.com/cloudnative-pg/cloudnative-pg-machinery
+module github.com/cloudnative-pg/machinery
 
 go 1.22.0
 

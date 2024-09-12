@@ -17,7 +17,7 @@ limitations under the License.
 package execlog
 
 import (
-	"github.com/cloudnative-pg/cloudnative-pg-machinery/pkg/log"
+	"github.com/cloudnative-pg/machinery/pkg/log"
 )
 
 // LogWriter implements the `Writer` interface using the logger,
