@@ -1,0 +1,48 @@
+linters-settings:
+  lll:
+    line-length: 120
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(github.com/cloudnative-pg/cloudnative-pg-machinery)
+      - blank
+      - dot
+  nlreturn:
+    # Size of the block (including return statement that is still "OK")
+    # so no return split required.
+    # Default: 1
+    block-size: 3
+
+linters:
+  enable-all: true
+  disable:
+    - depguard
+    - execinquery
+    - exhaustruct
+    - exportloopref
+    - funlen
+    - gomnd
+    - paralleltest
+    - testpackage
+    - wsl
+
+issues:
+  exclude-rules:
+    # Allow dot imports for ginkgo and gomega
+    - source: ginkgo|gomega
+      linters:
+      - revive
+      text: "should not use dot imports"
+    # Exclude some linters from running on tests files.
+    - path: _test\.go
+      linters:
+        - goconst
+    # Exclude lll issues for lines with long annotations
+    - linters:
+      - lll
+      source: "//\\s*\\+"
+  exclude-use-default: false
+
+run:
+  timeout: 5m
