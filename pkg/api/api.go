@@ -11,6 +11,11 @@ type SecretKeySelector struct {
 	Key string `json:"key"`
 }
 
+// ToCore transforms a SecretKeySelector structure to the analogue one in the corev1 pkg
+func (s *SecretKeySelector) ToCore() *corev1.SecretKeySelector {
+	return SecretKeySelectorToCore(s)
+}
+
 // LocalObjectReference contains enough information to let you locate a
 // local object with a known type inside the same namespace
 type LocalObjectReference struct {
@@ -25,6 +30,11 @@ type ConfigMapKeySelector struct {
 	LocalObjectReference `json:",inline"`
 	// The key to select
 	Key string `json:"key"`
+}
+
+// ToCore transforms a ConfigMapKeySelector structure to the analogue one in the corev1 pkg
+func (s *ConfigMapKeySelector) ToCore() *corev1.ConfigMapKeySelector {
+	return ConfigMapKeySelectorToCore(s)
 }
 
 // SecretKeySelectorToCore transforms a SecretKeySelector structure to the
