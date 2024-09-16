@@ -9,21 +9,6 @@ This repository contains a Go module including the features that were move out
 from the [CloudNativePG](https://cloudnative-pg.io) code base because they are
 useful by other projects.
 
-## Content
-
-This library includes:
-
-- `pkg/api` a set of reusable structures to reference a Kubernetes resource or a
-  key inside a Secret or ConfigMap.
-
-- `pkg/execlog` a set of utility functions allowing the caller to run an
-  external process while dumping its output into a JSON-formatted log stream.
-
-- `pkg/fileutils` utility functions to work with a file system.
-
-- `pkg/log` the CloudNativePG logging infrastructure.
-
-
 ## How to use it
 
 As a Go module:
