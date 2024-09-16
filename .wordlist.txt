@@ -1,3 +1,6 @@
 cnpg
 CloudNativePG
+ConfigMap
 TODO
+JSON
+Kubernetes
