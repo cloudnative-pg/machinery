@@ -5,7 +5,7 @@ linters-settings:
     sections:
       - standard
       - default
-      - prefix(github.com/cloudnative-pg/cloudnative-pg-machinery)
+      - prefix(github.com/cloudnative-pg/machinery)
       - blank
       - dot
   nlreturn:
@@ -15,17 +15,65 @@ linters-settings:
     block-size: 3
 
 linters:
-  enable-all: true
-  disable:
-    - depguard
-    - execinquery
-    - exhaustruct
-    - exportloopref
-    - funlen
-    - gomnd
-    - paralleltest
-    - testpackage
-    - wsl
+  disable-all: true
+  enable:
+    - asciicheck
+    - bodyclose
+    - dogsled
+    - dupl
+    - durationcheck
+    - errcheck
+    - copyloopvar
+    - gci
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - gofmt
+    - gofumpt
+    - goheader
+    - goimports
+    - gomoddirectives
+    - gomodguard
+    - goprintffuncname
+    - gosec
+    - gosimple
+    - govet
+    - ginkgolinter
+    - importas
+    - ineffassign
+    - lll
+    - makezero
+    - misspell
+    - nakedret
+    - nestif
+    - prealloc
+    - predeclared
+    - revive
+    - rowserrcheck
+    - sqlclosecheck
+    - staticcheck
+    - stylecheck
+    - thelper
+    - tparallel
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - wastedassign
+    - whitespace
+  # TODO: Reverse the configuration to enable all linters and disable some
+  #enable-all: true
+  #disable:
+  #  - depguard
+  #  - execinquery
+  #  - exhaustruct
+  #  - exportloopref
+  #  - funlen
+  #  - gomnd
+  #  - paralleltest
+  #  - testpackage
+  #  - wsl
 
 issues:
   exclude-rules:

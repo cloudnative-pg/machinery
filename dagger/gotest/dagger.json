@@ -1,0 +1,12 @@
+{
+  "name": "gotest",
+  "sdk": "go",
+  "dependencies": [
+    {
+      "name": "gotoolbox",
+      "source": "github.com/Excoriate/daggerverse/gotoolbox@fef40877e4091b9dff49bd49bd7ef28eb8c809fc"
+    }
+  ],
+  "source": ".",
+  "engineVersion": "v0.12.7"
+}
