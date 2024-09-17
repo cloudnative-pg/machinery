@@ -20,8 +20,6 @@ limitations under the License.
 
 package api
 
-import corev1 "k8s.io/api/core/v1"
-
 // SecretKeySelector contains enough information to let you locate
 // the key of a Secret
 type SecretKeySelector struct {
@@ -29,11 +27,6 @@ type SecretKeySelector struct {
 	LocalObjectReference `json:",inline"`
 	// The key to select
 	Key string `json:"key"`
-}
-
-// ToCore transforms a SecretKeySelector structure to the analogue one in the corev1 pkg
-func (s *SecretKeySelector) ToCore() *corev1.SecretKeySelector {
-	return SecretKeySelectorToCore(s)
 }
 
 // LocalObjectReference contains enough information to let you locate a
@@ -50,39 +43,4 @@ type ConfigMapKeySelector struct {
 	LocalObjectReference `json:",inline"`
 	// The key to select
 	Key string `json:"key"`
-}
-
-// ToCore transforms a ConfigMapKeySelector structure to the analogue one in the corev1 pkg
-func (s *ConfigMapKeySelector) ToCore() *corev1.ConfigMapKeySelector {
-	return ConfigMapKeySelectorToCore(s)
-}
-
-// SecretKeySelectorToCore transforms a SecretKeySelector structure to the
-// analogue one in the corev1 namespace
-func SecretKeySelectorToCore(selector *SecretKeySelector) *corev1.SecretKeySelector {
-	if selector == nil {
-		return nil
-	}
-
-	return &corev1.SecretKeySelector{
-		LocalObjectReference: corev1.LocalObjectReference{
-			Name: selector.LocalObjectReference.Name,
-		},
-		Key: selector.Key,
-	}
-}
-
-// ConfigMapKeySelectorToCore transforms a ConfigMapKeySelector structure to the analogue
-// one in the corev1 namespace
-func ConfigMapKeySelectorToCore(selector *ConfigMapKeySelector) *corev1.ConfigMapKeySelector {
-	if selector == nil {
-		return nil
-	}
-
-	return &corev1.ConfigMapKeySelector{
-		LocalObjectReference: corev1.LocalObjectReference{
-			Name: selector.Name,
-		},
-		Key: selector.Key,
-	}
 }
