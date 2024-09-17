@@ -14,6 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// +genclient
+// +kubebuilder:object:root=true
+// +k8s:deepcopy-gen=package
+
 package api
 
 import corev1 "k8s.io/api/core/v1"

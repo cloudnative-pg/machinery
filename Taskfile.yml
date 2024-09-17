@@ -1,6 +1,21 @@
 version: '3'
 
 tasks:
+  controller-gen:
+    desc: Run controller-gen
+    env:
+      # renovate: datasource=git-refs depName=controller-gen lookupName=https://github.com/cloudnative-pg/daggerverse currentValue=main
+      DAGGER_CONTROLLER_GEN_SHA: b618555de0679df409b6c688ab5fa30590e97148
+    cmds:
+      - >
+        GITHUB_REF= dagger -s call -m github.com/cloudnative-pg/daggerverse/controller-gen@${DAGGER_CONTROLLER_GEN_SHA}
+        controller-gen --source . --args object:headerFile=hack/boilerplate.go.txt --args paths=./pkg/api/...
+        file --path pkg/api/zz_generated.deepcopy.go export --path pkg/api/zz_generated.deepcopy.go
+    sources:
+      - ./pkg/api/**/*.go
+    generates:
+      - ./pkg/api/zz_generated.deepcopy.go
+
   spellcheck:
     desc: Run spellcheck
     env:
@@ -43,11 +58,15 @@ tasks:
       - >
         GITHUB_REF= dagger -s call -m github.com/cloudnative-pg/daggerverse/uncommitted@${DAGGER_UNCOMMITTED_SHA}
         check-uncommitted --source . stdout
+    deps:
+      - controller-gen
     sources:
       - ./**
 
   go-test:
     desc: Run go test
+    deps:
+      - controller-gen
     env:
       # renovate: datasource=docker depName=golang versioning=semver
       GOLANG_IMAGE_VERSION: 1.23.1
