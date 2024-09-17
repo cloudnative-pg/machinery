@@ -2,7 +2,8 @@
 
 # CloudNativePG - Machinery
 
-The [CloudNativePG codebase](https://github.com/cloudnative-pg/cloudnative-pg)is not intended to be used as a library.
+The [CloudNativePG codebase](https://github.com/cloudnative-pg/cloudnative-pg)
+is not intended to be used as a library.
 
 This repository hosts a Go module that includes features that were moved out
 of the [CloudNativePG](https://cloudnative-pg.io) codebase to make them
@@ -15,6 +16,9 @@ As a Go module:
 ```
 go get github.com/cloudnative-pg/machinery
 ```
+
+The documentation is available on the
+[pkg.go.dev](https://pkg.go.dev/github.com/cloudnative-pg/machinery) website.
 
 ## Users
 
