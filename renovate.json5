@@ -7,8 +7,12 @@
     ":labels(automated,no-issue)",
     "customManagers:githubActionsVersions",
     ":automergeMinor",
-    ":automergeDigest",
+    ":automergeDigest"
   ],
+  "gomod": {
+    // Do not manage the dagger go.mod file
+    "ignorePaths": ["dagger/gotest/go.mod"],
+  },
   "postUpdateOptions": [
     "gomodTidy"
   ],
@@ -42,7 +46,7 @@
         "patch",
         "digest"
       ],
-      "groupName": "all non-major go dependencies",
+      "groupName": "all non-major go dependencies"
     },
     {
       "matchDatasources": [
@@ -54,14 +58,14 @@
       "matchUpdateTypes": [
         "digest"
       ],
-      "groupName": "all cloudnative-pg daggerverse dependencies",
+      "groupName": "all cloudnative-pg daggerverse dependencies"
     },
     {
       "matchUpdateTypes": [
         "minor",
         "patch"
       ],
-      "matchCurrentVersion": "!/^0/",
+      "matchCurrentVersion": "!/^0/"
     }
   ]
 }
