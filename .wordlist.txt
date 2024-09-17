@@ -3,6 +3,7 @@ codebase
 dev
 CloudNativePG
 ConfigMap
+CLI
 TODO
 JSON
 Kubernetes

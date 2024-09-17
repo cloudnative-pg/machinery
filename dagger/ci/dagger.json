@@ -1,0 +1,32 @@
+{
+  "name": "ci",
+  "sdk": "go",
+  "dependencies": [
+    {
+      "name": "golangci-lint",
+      "source": "github.com/sagikazarmark/daggerverse/golangci-lint@691dcc2fc5e53b351453c803c8abb1a5ad727d1b"
+    },
+    {
+      "name": "commitlint",
+      "source": "github.com/cloudnative-pg/daggerverse/commitlint@84beb380e1aedba35535977d966956b5f020bbd6"
+    },
+    {
+      "name": "controller-gen",
+      "source": "github.com/cloudnative-pg/daggerverse/controller-gen@84beb380e1aedba35535977d966956b5f020bbd6"
+    },
+    {
+      "name": "gotest",
+      "source": "../gotest"
+    },
+    {
+      "name": "spellcheck",
+      "source": "github.com/cloudnative-pg/daggerverse/spellcheck@84beb380e1aedba35535977d966956b5f020bbd6"
+    },
+    {
+      "name": "uncommitted",
+      "source": "github.com/cloudnative-pg/daggerverse/uncommitted@84beb380e1aedba35535977d966956b5f020bbd6"
+    }
+  ],
+  "source": ".",
+  "engineVersion": "v0.13.0"
+}

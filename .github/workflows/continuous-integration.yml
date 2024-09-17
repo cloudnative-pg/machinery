@@ -14,14 +14,12 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
-      - name: Install Task
-        uses: arduino/setup-task@v2
       - name: Install Dagger
         env:
           # renovate: datasource=github-tags depName=dagger/dagger versioning=semver
           DAGGER_VERSION: 0.13.0
         run: |
           curl -L https://dl.dagger.io/dagger/install.sh | BIN_DIR=$HOME/.local/bin sh
-      - name: Run CI task
+      - name: Run CI
         run: |
-          task ci
+          dagger -m dagger/ci call ci --source .
