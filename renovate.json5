@@ -30,7 +30,28 @@
       "matchStrings": [
         "# renovate: datasource=(?<datasource>[a-z-.]+?) depName=(?<depName>[^\\s]+?)(?: (?:lookupName|packageName)=(?<packageName>[^\\s]+?))?(?: versioning=(?<versioning>[^\\s]+?))?(?: extractVersion=(?<extractVersion>[^\\s]+?))?(?: currentValue=(?<currentValue>[^\\s]+?))?\\s+[A-Za-z0-9_]+?_SHA\\s*:\\s*[\"']?(?<currentDigest>[a-f0-9]+?)[\"']?\\s",
         "# renovate: datasource=(?<datasource>[a-z-.]+?) depName=(?<depName>[^\\s]+?)(?: (?:lookupName|packageName)=(?<packageName>[^\\s]+?))?(?: versioning=(?<versioning>[^\\s]+?))?(?: extractVersion=(?<extractVersion>[^\\s]+?))?\\s+[A-Za-z0-9_]+?_VERSION\\s*:\\s*[\"']?(?<currentValue>.+?)[\"']?\\s"
-      ]
+      ],
+    },
+    {
+      "customType": "regex",
+      "fileMatch": [
+        "(^|/)dagger\\.json$"
+      ],
+      matchStrings: [
+        '\\s*"source"\\s*:\\s*"(?<registryUrl>[.\\w-]+)\/(?<pkgName>[\\w-]+\/[.\\w-]+)(\/(?<depName>.*))?@(?<currentDigest>[a-f0-9]{40})"',
+      ],
+      "datasourceTemplate": "git-refs",
+      "packageNameTemplate": "https://{{{registryUrl}}}/{{{pkgName}}}",
+      "currentValueTemplate": "main"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": [
+        "(^|/)dagger/.*\\.go$"
+      ],
+      matchStrings: [
+        "\/\/ renovate: datasource=(?<datasource>[a-z-.]+?) depName=(?<depName>[^\\s]+?)(?: (?:lookupName|packageName)=(?<packageName>[^\\s]+?))?(?: versioning=(?<versioning>[^\\s]+?))?(?: extractVersion=(?<extractVersion>[^\\s]+?))?\\s+.*Version = [\"'](?<currentValue>.+)[\"']"
+      ],
     }
   ],
   "packageRules": [
