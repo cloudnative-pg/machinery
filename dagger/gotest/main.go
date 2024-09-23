@@ -47,7 +47,9 @@ func New(
 		WithUser(user).
 		WithEnvVariable("CGO_ENABLED", "0").
 		WithEnvVariable("GOMODCACHE", modCachePath).
-		WithMountedCache(modCachePath, dag.CacheVolume("go-mod")).
+		WithEnvVariable("GOCACHE", goCachePath).
+		WithMountedCache(modCachePath, dag.CacheVolume("go-mod"),
+			dagger.ContainerWithMountedCacheOpts{Owner: user}).
 		WithMountedCache(goCachePath, dag.CacheVolume("go-build"),
 			dagger.ContainerWithMountedCacheOpts{Owner: user})
 
