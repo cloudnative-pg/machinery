@@ -72,7 +72,8 @@ tasks:
       GOLANG_IMAGE_VERSION: 1.23.1
     cmds:
       - >
-        GITHUB_REF= dagger -s call -m dagger/gotest test --ctr "golang:${GOLANG_IMAGE_VERSION}-alpine" --src .
+        GITHUB_REF= dagger -s call -m dagger/gotest --version ${GOLANG_IMAGE_VERSION} exec
+        --src . --args go --args test --args './...'
 
   ci:
     desc: Run the CI pipeline

@@ -16,27 +16,46 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"dagger/gotest/internal/dagger"
 )
 
-type Gotest struct{}
+type Gotest struct {
+	Ctr *dagger.Container
+}
 
-func (m *Gotest) Test(ctx context.Context, ctr *dagger.Container, src *dagger.Directory) (string, error) {
-	ctr = ctr.WithExec([]string{"apk", "add", "--no-cache", "git", "curl", "unzip"}).
-		WithExec([]string{"adduser", "-D", "-h", "/home/user", "-u", "1000", "user"}).WithUser("1000").
-		WithMountedCache("/home/user/go/pkg/mod", dag.CacheVolume("go-mod-123"),
-			dagger.ContainerWithMountedCacheOpts{Owner: "user"},
-		).
-		WithEnvVariable("GOMODCACHE", "/home/user/go/pkg/mod").
-		WithMountedCache("/home/user/go/build-cache", dag.CacheVolume("go-build-123"),
-			dagger.ContainerWithMountedCacheOpts{Owner: "user"},
-		).
-		WithEnvVariable("GOCACHE", "/home/user/go/build-cache")
+func New(
+	// Go version
+	//
+	// +optional
+	// +default="latest"
+	version string,
+	// Container to run the tests
+	// +optional
+	ctr *dagger.Container,
+) *Gotest {
+	if ctr != nil {
+		return &Gotest{Ctr: ctr}
+	}
 
-	return dag.Gotoolbox(dagger.GotoolboxOpts{Ctr: ctr}).WithCgoDisabled().RunGoCmd(ctx,
-		[]string{"test", "-v", "./..."},
-		dagger.GotoolboxRunGoCmdOpts{
-			Src: src,
-		})
+	user := "noroot"
+	modCachePath := fmt.Sprintf("/home/%s/go/pkg/mod", user)
+	goCachePath := fmt.Sprintf("/home/%s/.cache/go-build", user)
+	ctr = dag.Container().From("golang:"+version).
+		WithExec([]string{"useradd", "-m", user}).
+		WithUser(user).
+		WithEnvVariable("CGO_ENABLED", "0").
+		WithEnvVariable("GOMODCACHE", modCachePath).
+		WithEnvVariable("GOCACHE", goCachePath).
+		WithMountedCache(modCachePath, dag.CacheVolume("go-mod"),
+			dagger.ContainerWithMountedCacheOpts{Owner: user}).
+		WithMountedCache(goCachePath, dag.CacheVolume("go-build"),
+			dagger.ContainerWithMountedCacheOpts{Owner: user})
+
+	return &Gotest{Ctr: ctr}
+}
+
+func (m *Gotest) Exec(ctx context.Context, src *dagger.Directory, args ...string) (string, error) {
+	return m.Ctr.WithDirectory("/src", src).WithWorkdir("/src").WithExec(args).Stdout(ctx)
 }
