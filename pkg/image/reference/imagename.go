@@ -76,13 +76,3 @@ func New(name string) *Data {
 
 	return reference
 }
-
-// GetImageTag gets the image tag from a full image string.
-// Example:
-//
-//	GetImageTag("postgres") == "latest"
-//	GetImageTag("ghcr.io/cloudnative-pg/postgresql:12.3") == "12.3"
-func GetImageTag(imageName string) string {
-	ref := New(imageName)
-	return ref.Tag
-}

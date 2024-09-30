@@ -36,14 +36,14 @@ var _ = Describe("image name management", func() {
 	})
 
 	It("should extract tag names", func() {
-		Expect(GetImageTag("postgres")).To(Equal("latest"))
-		Expect(GetImageTag("postgres:34.3")).To(Equal("34.3"))
-		Expect(GetImageTag("postgres:13@sha256:cff94de382ca538861622bbe84cfe03f44f307a9846a5c5eda672cf4dc692866")).
+		Expect(New("postgres").Tag).To(Equal("latest"))
+		Expect(New("postgres:34.3").Tag).To(Equal("34.3"))
+		Expect(New("postgres:13@sha256:cff94de382ca538861622bbe84cfe03f44f307a9846a5c5eda672cf4dc692866").Tag).
 			To(Equal("13"))
 	})
 
 	It("should not extract a tag name", func() {
-		Expect(GetImageTag("postgres@sha256:cff94dd382ca538861622bbe84cfe03f44f307a9846a5c5eda672cf4dc692866")).
+		Expect(New("postgres@sha256:cff94dd382ca538861622bbe84cfe03f44f307a9846a5c5eda672cf4dc692866").Tag).
 			To(BeEmpty())
 	})
 })
