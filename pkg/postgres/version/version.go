@@ -25,8 +25,10 @@ import (
 
 var semanticVersionRegex = regexp.MustCompile(`^(\d\.?)+`)
 
-// Data is a PostgreSQL version number, like 90503 standing
-// for "9.5.3"
+// Data is a structure used to manage a PostgreSQL version,
+// consisting of two parts: major and minor. For instance,
+// version 10.0 corresponds to a major of 10 and a minor of 0.
+// See: https://www.postgresql.org/support/versioning/
 type Data struct {
 	major uint64
 	minor uint64
@@ -37,7 +39,7 @@ func (d Data) Major() uint64 {
 	return d.major
 }
 
-// Minor gets the minor version (i.e. 3)
+// Minor gets the minor version (i.e. 0)
 func (d Data) Minor() uint64 {
 	return d.minor
 }
@@ -64,14 +66,15 @@ func New(major, minor uint64) Data {
 // FromTag parse a PostgreSQL version string returning
 // a major version ID. Example:
 //
-//	FromTag("10.2") == (10,2)
-//	FromTag("15beta1") == (15,0)
+//	FromTag("11.2") == (11,2)
 //	FromTag("12.1") == (12,1)
 //	FromTag("13.3.2.1-1") == (13,3)
 //	FromTag("13.4") == (13,4)
 //	FromTag("14") == (14,0)
 //	FromTag("15.5-10") == (15,5)
 //	FromTag("16.0") == (16,0)
+//	FromTag("17beta1") == (17,0)
+//	FromTag("17rc1") == (17,0)
 func FromTag(version string) (Data, error) {
 	if !semanticVersionRegex.MatchString(version) {
 		return Data{},

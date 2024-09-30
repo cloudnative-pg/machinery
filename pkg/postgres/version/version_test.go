@@ -29,14 +29,15 @@ var _ = Describe("PostgreSQL version handling", func() {
 		})
 
 		It("should parse PostgreSQL official version policy", func() {
-			Expect(FromTag("10.2")).To(Equal(New(10, 2)))
-			Expect(FromTag("15beta1")).To(Equal(New(15, 0)))
+			Expect(FromTag("11.2")).To(Equal(New(11, 2)))
 			Expect(FromTag("12.1")).To(Equal(New(12, 1)))
 			Expect(FromTag("13.3.2.1-1")).To(Equal(New(13, 3)))
 			Expect(FromTag("13.4")).To(Equal(New(13, 4)))
 			Expect(FromTag("14")).To(Equal(New(14, 0)))
 			Expect(FromTag("15.5-10")).To(Equal(New(15, 5)))
 			Expect(FromTag("16.0")).To(Equal(New(16, 0)))
+			Expect(FromTag("17beta1")).To(Equal(New(17, 0)))
+			Expect(FromTag("17rc1")).To(Equal(New(17, 0)))
 		})
 
 		It("should ignore extra components", func() {
