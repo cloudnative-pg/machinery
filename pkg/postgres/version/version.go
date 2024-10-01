@@ -47,13 +47,10 @@ func (d Data) Minor() uint64 {
 
 // Less is the implementation of the "less than" operator
 func (d Data) Less(other Data) bool {
-	if d.major < other.major {
-		return true
-	} else if d.major > other.major {
-		return false
+	if d.major == other.major {
+		return d.minor < other.minor
 	}
-
-	return d.minor < other.minor
+	return d.major < other.major
 }
 
 // New constructs a version from its components
