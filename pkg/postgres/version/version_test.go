@@ -86,8 +86,8 @@ var _ = Describe("PostgreSQL version handling", func() {
 				Expect(b.Less(b)).To(BeFalse())
 
 				if a == b {
-					Expect(a.Less(b)).To(Equal(false))
-					Expect(b.Less(a)).To(Equal(false))
+					Expect(a.Less(b)).To(BeFalse())
+					Expect(b.Less(a)).To(BeFalse())
 				} else {
 					Expect(b.Less(a)).To(Equal(!result))
 				}

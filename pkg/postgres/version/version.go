@@ -18,6 +18,7 @@ package version
 
 import (
 	"fmt"
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -85,23 +86,27 @@ func FromTag(version string) (Data, error) {
 		version = versionOnly
 	}
 
-	var majorVersion, minorVersion int
-	var err error
-
 	splitVersion := strings.Split(version, ".")
 
-	idx := 0
-	majorVersion, err = strconv.Atoi(splitVersion[idx])
+	majorVersion, err := strconv.Atoi(splitVersion[0])
 	if err != nil {
 		return Data{}, fmt.Errorf("wrong PostgreSQL major in version %v", version)
 	}
-	idx++
 
-	if len(splitVersion) > idx {
-		minorVersion, err = strconv.Atoi(splitVersion[idx])
-		if err != nil || minorVersion >= 100 {
+	minorVersion := 0
+	if len(splitVersion) > 1 {
+		minorVersion, err = strconv.Atoi(splitVersion[1])
+		if err != nil {
 			return Data{}, fmt.Errorf("wrong PostgreSQL minor in version %v", version)
 		}
+	}
+
+	if majorVersion < 0 || majorVersion > math.MaxInt {
+		return Data{}, fmt.Errorf("wrong PostgreSQL major in version %v", version)
+	}
+
+	if minorVersion < 0 || minorVersion > math.MaxInt {
+		return Data{}, fmt.Errorf("wrong PostgreSQL minor in version %v", version)
 	}
 
 	return Data{
