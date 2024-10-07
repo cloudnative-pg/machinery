@@ -69,7 +69,7 @@ tasks:
       - controller-gen
     env:
       # renovate: datasource=docker depName=golang versioning=semver
-      GOLANG_IMAGE_VERSION: 1.23.1
+      GOLANG_IMAGE_VERSION: 1.23.2
     cmds:
       - >
         GITHUB_REF= dagger -s call -m dagger/gotest --version ${GOLANG_IMAGE_VERSION} exec
