@@ -84,6 +84,10 @@ func GetFieldsRemapFlags() (res []string) {
 // passed from the user
 // This is executed after args were already parsed.
 func (l *Flags) ConfigureLogging() {
+	if l.zapOptions.TimeEncoder == nil {
+		l.zapOptions.TimeEncoder = zapcore.RFC3339NanoTimeEncoder
+	}
+
 	logger := zap.New(zap.UseFlagOptions(&l.zapOptions), customLevel, customDestination, remapKeys)
 	switch logLevel {
 	case ErrorLevelString,
