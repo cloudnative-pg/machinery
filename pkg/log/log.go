@@ -158,44 +158,9 @@ func Enabled() bool {
 	return log.Enabled()
 }
 
-// Error exposes the same method from the logr.Logger interface using the default logger
-func Error(err error, msg string, keysAndValues ...interface{}) {
-	log.Error(err, msg, keysAndValues...)
-}
-
-// Info exposes the same method from the logr.Logger interface using the default logger
-func Info(msg string, keysAndValues ...interface{}) {
-	log.Info(msg, keysAndValues...)
-}
-
-// Warning exposes the same method from the logr.Logger interface using the default logger
-func Warning(msg string, keysAndValues ...interface{}) {
-	log.Warning(msg, keysAndValues...)
-}
-
-// Debug exposes the same method from the logr.Logger interface using the default logger
-func Debug(msg string, keysAndValues ...interface{}) {
-	log.Debug(msg, keysAndValues...)
-}
-
-// Trace exposes the same method from the logr.Logger interface using the default logger
-func Trace(msg string, keysAndValues ...interface{}) {
-	log.Trace(msg, keysAndValues...)
-}
-
-// WithValues exposes the same method from the logr.Logger interface using the default logger
-func WithValues(keysAndValues ...interface{}) Logger {
-	return log.WithValues(keysAndValues...)
-}
-
 // WithName exposes the same method from the logr.Logger interface using the default logger
 func WithName(name string) Logger {
 	return log.WithName(name)
-}
-
-// WithCaller exposes the same method from logr.Logger interface using the default logger
-func WithCaller() Logger {
-	return log.WithCaller()
 }
 
 // FromContext builds a logger with some additional information stored in the context
