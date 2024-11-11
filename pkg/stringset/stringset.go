@@ -125,3 +125,17 @@ func (set *Data) Intersect(other *Data) *Data {
 
 	return From(result)
 }
+
+// Difference returns the differences between two
+// string sets
+func (set *Data) Difference(other *Data) *Data {
+	result := make([]string, 0, len(set.innerMap))
+
+	for key := range set.innerMap {
+		if !other.Has(key) {
+			result = append(result, key)
+		}
+	}
+
+	return From(result)
+}
