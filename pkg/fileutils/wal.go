@@ -43,14 +43,24 @@ func (w *WALList) MarkAsDone(ctx context.Context, walName string) error {
 	contextLogger := log.FromContext(ctx)
 	// Extract the base name of the walName to ensure consistency
 	walBaseName := filepath.Base(walName)
-	pgDataPath := getArchiveStatusPath(w.pgDataPath)
 
-	readyPath := filepath.Join(pgDataPath, walBaseName+".ready")
-	donePath := filepath.Join(pgDataPath, walBaseName+".done")
+	readyPath := path.Join(
+		getArchiveStatusPath(w.pgDataPath),
+		walBaseName+".ready",
+	)
+	donePath := path.Join(
+		getArchiveStatusPath(w.pgDataPath),
+		walBaseName+".done",
+	)
+
 	err := os.Rename(readyPath, donePath)
 	if err != nil {
-		contextLogger.Error(err,
-			"failed to rename WAL file", "readyPath", readyPath, "donePath", donePath)
+		contextLogger.Error(
+			err,
+			"failed to rename WAL file",
+			"readyPath", readyPath,
+			"donePath", donePath,
+		)
 		return err
 	}
 
@@ -130,7 +140,10 @@ func GatherReadyWALFiles(
 
 		walFileName := strings.TrimSuffix(filepath.Base(path), ".ready")
 
-		walList = append(walList, filepath.Join("pg_wal", walFileName))
+		walList = append(
+			walList,
+			filepath.Join(config.getPgDataPath(), "pg_wal", walFileName),
+		)
 		return nil
 	})
 
