@@ -1,4 +1,4 @@
-package fileutils
+package wals
 
 import (
 	"context"
@@ -154,8 +154,9 @@ func GatherReadyWALFiles(
 	}
 
 	return &WALList{
-		Ready: walList, HasMoreResults: errors.Is(err, noMoreWALFilesNeeded),
-		pgDataPath: config.getPgDataPath(),
+		Ready:          walList,
+		HasMoreResults: errors.Is(err, noMoreWALFilesNeeded),
+		pgDataPath:     config.getPgDataPath(),
 	}
 }
 
