@@ -112,8 +112,8 @@ func (set *Data) Eq(other *Data) bool {
 	return true
 }
 
-// Intersect returns the intersection between two
-// string sets
+// Intersect returns a new set containing all the elements that are present
+// in both the set and the argument (set intersections).
 func (set *Data) Intersect(other *Data) *Data {
 	result := make([]string, 0, len(set.innerMap)+len(other.innerMap))
 
@@ -126,9 +126,9 @@ func (set *Data) Intersect(other *Data) *Data {
 	return From(result)
 }
 
-// Difference returns the differences between two
-// string sets
-func (set *Data) Difference(other *Data) *Data {
+// Subtract returns a new set containing all the elements that are present
+// in the set but not in the argument (set difference).
+func (set *Data) Subtract(other *Data) *Data {
 	result := make([]string, 0, len(set.innerMap))
 
 	for key := range set.innerMap {
