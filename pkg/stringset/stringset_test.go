@@ -100,4 +100,34 @@ var _ = Describe("String set", func() {
 		Expect(setTwo.Intersect(emptySet).Eq(emptySet)).To(BeTrue())
 		Expect(emptySet.Intersect(emptySet).Eq(emptySet)).To(BeTrue())
 	})
+
+	It("can subtract two string sets", func() {
+		setOne := From([]string{
+			"one",
+			"two",
+			"three",
+		})
+
+		setTwo := From([]string{
+			"two",
+			"three",
+			"four",
+		})
+
+		differenceOne := From([]string{
+			"one",
+		})
+
+		differenceTwo := From([]string{
+			"four",
+		})
+
+		emptySet := From(nil)
+
+		Expect(setOne.Subtract(setTwo).Eq(differenceOne)).To(BeTrue())
+		Expect(setTwo.Subtract(setOne).Eq(differenceTwo)).To(BeTrue())
+		Expect(setOne.Subtract(emptySet).Eq(setOne)).To(BeTrue())
+		Expect(emptySet.Subtract(setTwo).Eq(emptySet)).To(BeTrue())
+		Expect(emptySet.Subtract(emptySet).Eq(emptySet)).To(BeTrue())
+	})
 })
