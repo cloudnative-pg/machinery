@@ -22,7 +22,7 @@ import (
 )
 
 var _ = Describe("LSN handling functions", func() {
-	Describe("Parse", func() {
+	Describe("Parse and Int64ToLSN", func() {
 		It("raises errors for invalid LSNs", func() {
 			_, err := LSN("").Parse()
 			Expect(err).To(HaveOccurred())
@@ -32,11 +32,16 @@ var _ = Describe("LSN handling functions", func() {
 			Expect(err).To(HaveOccurred())
 		})
 
-		It("works for good LSNs", func() {
-			Expect(LSN("1/1").Parse()).Should(Equal(int64(4294967297)))
-			Expect(LSN("3/23").Parse()).Should(Equal(int64(12884901923)))
-			Expect(LSN("3BB/A9FFFBE8").Parse()).Should(Equal(int64(4104545893352)))
-		})
+		DescribeTable(
+			"works for good LSNs",
+			func(lsn string, value int64) {
+				Expect(LSN(lsn).Parse()).To(Equal(value))
+				Expect(Int64ToLSN(value)).To(Equal(LSN(lsn)))
+			},
+			Entry("1/1", "1/1", int64(4294967297)),
+			Entry("3/23", "3/23", int64(12884901923)),
+			Entry("3BB/A9FFFBE8", "3BB/A9FFFBE8", int64(4104545893352)),
+		)
 	})
 
 	Describe("Less", func() {
@@ -51,5 +56,28 @@ var _ = Describe("LSN handling functions", func() {
 			Expect(LSN("1/23").Less(LSN("2/23"))).To(BeTrue())
 			Expect(LSN("2/23").Less(LSN("1/23"))).To(BeFalse())
 		})
+	})
+
+	Describe("XLog file name", func() {
+		segmentSize := int64(16 * 1024 * 1024)
+
+		It("raise errors for invalid LSNs", func() {
+			_, err := LSN("").WALFileName(1, segmentSize)
+			Expect(err).To(HaveOccurred())
+		})
+
+		DescribeTable(
+			"works correctly for good LSNs",
+			func(tli int, lsn LSN, wal string) {
+				Expect(lsn.WALFileName(tli, segmentSize)).To(Equal(wal))
+
+				lsnWalStart, err := lsn.WALFileStart(segmentSize)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(lsnWalStart.WALFileName(tli, segmentSize)).To(Equal(wal))
+			},
+			Entry("good LSN", 10, LSN("5283/D9C2A320"), "0000000A00005283000000D9"),
+			Entry("good LSN", 1, LSN("C/CE7BAD70"), "000000010000000C000000CE"),
+			Entry("good LSN", 1, LSN("0/14E5EB8"), "000000010000000000000001"),
+		)
 	})
 })
