@@ -41,20 +41,20 @@ func (lsn LSN) Less(other LSN) bool {
 }
 
 // Components an LSN into its components
-func (lsn LSN) Components() (int64, int64, error) {
+func (lsn LSN) Components() (uint64, uint64, error) {
 	components := strings.Split(string(lsn), "/")
 	if len(components) != 2 {
 		return 0, 0, fmt.Errorf("error parsing LSN %s", lsn)
 	}
 
 	// Segment is unsigned int 32, so we parse using 64 bits to avoid overflow on sign bit
-	segment, err := strconv.ParseInt(components[0], 16, 64)
+	segment, err := strconv.ParseUint(components[0], 16, 64)
 	if err != nil {
 		return 0, 0, fmt.Errorf("error parsing LSN %s: %w", lsn, err)
 	}
 
 	// Displacement is unsigned int 32, so we parse using 64 bits to avoid overflow on sign bit
-	displacement, err := strconv.ParseInt(components[1], 16, 64)
+	displacement, err := strconv.ParseUint(components[1], 16, 64)
 	if err != nil {
 		return 0, 0, fmt.Errorf("error parsing LSN %s: %w", lsn, err)
 	}
@@ -63,7 +63,7 @@ func (lsn LSN) Components() (int64, int64, error) {
 }
 
 // Parse an LSN in its components
-func (lsn LSN) Parse() (int64, error) {
+func (lsn LSN) Parse() (uint64, error) {
 	segment, displacement, err := lsn.Components()
 	if err != nil {
 		return 0, err
@@ -73,7 +73,7 @@ func (lsn LSN) Parse() (int64, error) {
 }
 
 // WALFileName computes the name of the WAL file hosting the passed LSN
-func (lsn LSN) WALFileName(tli int, walSegmentSize int64) (string, error) {
+func (lsn LSN) WALFileName(tli int, walSegmentSize uint64) (string, error) {
 	// Important: this implementation is based on the
 	// XLogFileName and the XLogSegmentsPerXLogId PostgreSQL
 	// functions
@@ -95,7 +95,7 @@ func (lsn LSN) WALFileName(tli int, walSegmentSize int64) (string, error) {
 }
 
 // WALFileStart computes the LSN corresponding to the WAL file start
-func (lsn LSN) WALFileStart(walSegmentSize int64) (LSN, error) {
+func (lsn LSN) WALFileStart(walSegmentSize uint64) (LSN, error) {
 	value, err := lsn.Parse()
 	if err != nil {
 		return "", err
@@ -107,6 +107,6 @@ func (lsn LSN) WALFileStart(walSegmentSize int64) (LSN, error) {
 }
 
 // Int64ToLSN convert an int64 LSN to its string representation
-func Int64ToLSN(value int64) LSN {
+func Int64ToLSN(value uint64) LSN {
 	return LSN(fmt.Sprintf("%X/%X", value>>32, value%0x100000000))
 }
