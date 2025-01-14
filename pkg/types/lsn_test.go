@@ -34,13 +34,13 @@ var _ = Describe("LSN handling functions", func() {
 
 		DescribeTable(
 			"works for good LSNs",
-			func(lsn string, value int64) {
+			func(lsn string, value uint64) {
 				Expect(LSN(lsn).Parse()).To(Equal(value))
 				Expect(Int64ToLSN(value)).To(Equal(LSN(lsn)))
 			},
-			Entry("1/1", "1/1", int64(4294967297)),
-			Entry("3/23", "3/23", int64(12884901923)),
-			Entry("3BB/A9FFFBE8", "3BB/A9FFFBE8", int64(4104545893352)),
+			Entry("1/1", "1/1", uint64(4294967297)),
+			Entry("3/23", "3/23", uint64(12884901923)),
+			Entry("3BB/A9FFFBE8", "3BB/A9FFFBE8", uint64(4104545893352)),
 		)
 	})
 
@@ -59,7 +59,7 @@ var _ = Describe("LSN handling functions", func() {
 	})
 
 	Describe("XLog file name", func() {
-		segmentSize := int64(16 * 1024 * 1024)
+		segmentSize := uint64(16 * 1024 * 1024)
 
 		It("raise errors for invalid LSNs", func() {
 			_, err := LSN("").WALFileName(1, segmentSize)
