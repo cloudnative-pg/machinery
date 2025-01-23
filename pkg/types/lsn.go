@@ -94,6 +94,28 @@ func (lsn LSN) WALFileName(tli int, walSegmentSize uint64) (string, error) {
 	), nil
 }
 
+// LSNStartFromWALName extracts the start LSN from a WAL file name
+func LSNStartFromWALName(filename string, walSegSize uint64) (LSN, error) {
+	if len(filename) != 24 {
+		return "", fmt.Errorf("invalid WAL file name length")
+	}
+
+	var tli, log, segment uint64
+
+	_, err := fmt.Sscanf(filename, "%08X%08X%08X", &tli, &log, &segment)
+	if err != nil {
+		fmt.Println("Error parsing string:", err)
+		return "", err
+	}
+
+	xlogSegmentsPerXLogID := 0x100000000 / walSegSize
+
+	logSegNo := log*xlogSegmentsPerXLogID + segment
+	startLSN := logSegNo * walSegSize
+
+	return Int64ToLSN(startLSN), nil
+}
+
 // WALFileStart computes the LSN corresponding to the WAL file start
 func (lsn LSN) WALFileStart(walSegmentSize uint64) (LSN, error) {
 	value, err := lsn.Parse()
