@@ -81,3 +81,59 @@ var _ = Describe("LSN handling functions", func() {
 		)
 	})
 })
+
+var _ = Describe("LSNStartFromWALName", func() {
+	segmentSize := uint64(16 * 1024 * 1024)
+
+	It("returns an error for invalid WAL file name length", func() {
+		_, err := LSNStartFromWALName("00000001000000000000001", segmentSize)
+		Expect(err).To(HaveOccurred())
+	})
+
+	It("returns an error for invalid WAL file name format", func() {
+		_, err := LSNStartFromWALName("invalidWALFileName", segmentSize)
+		Expect(err).To(HaveOccurred())
+	})
+
+	It("returns the correct start LSN for a valid WAL file name", func() {
+		startLSN, err := LSNStartFromWALName("000000010000000000000001", segmentSize)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(startLSN).To(Equal(LSN("0/1000000")))
+	})
+
+	It("returns the correct start LSN for another valid WAL file name", func() {
+		startLSN, err := LSNStartFromWALName("0000000A00005283000000D9", segmentSize)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(startLSN).To(Equal(LSN("5283/D9000000")))
+	})
+
+	// Additional test cases
+	It("returns the correct start LSN for a different valid WAL file name", func() {
+		startLSN, err := LSNStartFromWALName("000000020000003400000056", segmentSize)
+		Expect(err).ToNot(HaveOccurred())
+
+		const lsn = LSN("34/56000000")
+		Expect(startLSN).To(Equal(lsn))
+		Expect(lsn.WALFileStart(segmentSize)).To(Equal(lsn))
+	})
+
+	It("returns the correct start LSN for a WAL file name with different timeline", func() {
+		startLSN, err := LSNStartFromWALName("0000000B0000001C0000002A", segmentSize)
+		Expect(err).ToNot(HaveOccurred())
+
+		const lsn = LSN("1C/2A000000")
+		Expect(startLSN).To(Equal(lsn))
+		Expect(lsn.WALFileStart(segmentSize)).To(Equal(lsn))
+	})
+
+	It("returns the correct start LSN for a WAL file name with maximum segment", func() {
+		const filename = "FFFFFFFFFFFFFFFFFFFFFFFF"
+		const lsn = LSN("FFFFFE/FF000000")
+
+		startLSN, err := LSNStartFromWALName(filename, segmentSize)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(startLSN).To(Equal(lsn))
+
+		Expect(lsn.WALFileStart(segmentSize)).To(Equal(lsn))
+	})
+})
