@@ -7,10 +7,10 @@ require (
 	github.com/lib/pq v1.10.9
 	github.com/onsi/ginkgo/v2 v2.22.2
 	github.com/onsi/gomega v1.36.2
-	github.com/spf13/pflag v1.0.5
+	github.com/spf13/pflag v1.0.6
 	github.com/thoas/go-funk v0.9.3
 	go.uber.org/zap v1.27.0
-	golang.org/x/sys v0.29.0
+	golang.org/x/sys v0.30.0
 	k8s.io/apimachinery v0.31.2
 	k8s.io/klog/v2 v2.130.1
 	sigs.k8s.io/controller-runtime v0.19.1
