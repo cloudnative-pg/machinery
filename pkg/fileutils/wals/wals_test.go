@@ -74,6 +74,19 @@ var _ = Describe("WALList functions", func() {
 		Expect(result.HasMoreResults).To(BeFalse())
 	})
 
+	It("gathers ready WAL files with skip one", func() {
+		result := GatherReadyWALFiles(ctx, GatherReadyWALFilesConfig{
+			MaxResults: 10, PgDataPath: tmpDir, SkipWALs: []string{"pg_wal/000000010000000000000001"},
+		})
+		Expect(result.Ready).ToNot(
+			ContainElement(
+				path.Join(tmpDir, "pg_wal/000000010000000000000001")))
+		Expect(
+			result.Ready).To(
+			ContainElement(path.Join(tmpDir, "pg_wal/000000010000000000000002")))
+		Expect(result.HasMoreResults).To(BeFalse())
+	})
+
 	It("handles no more WAL files needed", func() {
 		result := GatherReadyWALFiles(ctx, GatherReadyWALFilesConfig{MaxResults: 1, PgDataPath: tmpDir})
 		Expect(result.Ready).To(HaveLen(1))

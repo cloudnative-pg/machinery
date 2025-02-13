@@ -85,7 +85,8 @@ func (c GatherReadyWALFilesConfig) getPgDataPath() string {
 
 func (c GatherReadyWALFilesConfig) shouldSkipWAL(walPath string) bool {
 	for _, walToSkip := range c.SkipWALs {
-		if strings.HasSuffix(walPath, walToSkip) {
+		walNameToSkip := path.Base(walToSkip) + ".ready"
+		if strings.HasSuffix(walPath, walNameToSkip) {
 			return true
 		}
 	}
