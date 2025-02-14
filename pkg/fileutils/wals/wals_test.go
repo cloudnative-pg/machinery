@@ -74,7 +74,7 @@ var _ = Describe("WALList functions", func() {
 		Expect(result.HasMoreResults).To(BeFalse())
 	})
 
-	It("gathers ready WAL files with skip one", func() {
+	It("gathers ready WAL files with one skipped", func() {
 		result := GatherReadyWALFiles(ctx, GatherReadyWALFilesConfig{
 			MaxResults: 10, PgDataPath: tmpDir, SkipWALs: []string{"pg_wal/000000010000000000000001"},
 		})
