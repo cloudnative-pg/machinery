@@ -43,12 +43,12 @@ const (
 	ShareDir InstallationLocation = "sharedir"
 )
 
-// GetInstallationLocation gets the PostgreSQL folder given a
-// pg_config binary
-func GetInstallationLocation(pgConfigBinary string, dir InstallationLocation) (string, error) {
-	out, err := exec.Command(pgConfigBinary, "--"+string(dir)).Output() //nolint:gosec
+// GetPgConfigDirectory retrieves a PostgreSQL directory path using the
+// specified InstallationLocation
+func GetPgConfigDirectory(pgConfigBinary string, loc InstallationLocation) (string, error) {
+	out, err := exec.Command(pgConfigBinary, "--"+string(loc)).Output() //nolint:gosec
 	if err != nil {
-		return "", fmt.Errorf("failed to get the %q value from pg_config: %w", dir, err)
+		return "", fmt.Errorf("failed to get the %q value from pg_config: %w", loc, err)
 	}
 	return strings.TrimSpace(string(out)), nil
 }
