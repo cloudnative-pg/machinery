@@ -22,33 +22,31 @@ import (
 	"strings"
 )
 
-// InstallationLocation is the type of the PostgreSQL
-// installation locations
-type InstallationLocation string
+// ConfigurationParameter represents a PostgreSQL configuration parameter name
+type ConfigurationParameter string
 
 const (
 	// BinDir is the location user executables. Use this, for example,
 	// to find the psql program. This is normally also the location
 	// where the pg_config program resides.
-	BinDir InstallationLocation = "bindir"
+	BinDir ConfigurationParameter = "bindir"
 
 	// PkgLibDir is the location of dynamically loadable modules, or
 	// where the server would search for them. (Other
 	// architecture-dependent data files might also be installed in
 	// this directory.)
-	PkgLibDir InstallationLocation = "pkglibdir"
+	PkgLibDir ConfigurationParameter = "pkglibdir"
 
 	// ShareDir is the location of architecture-independent support
 	// files.
-	ShareDir InstallationLocation = "sharedir"
+	ShareDir ConfigurationParameter = "sharedir"
 )
 
-// GetPgConfigDirectory retrieves a PostgreSQL directory path using the
-// specified InstallationLocation
-func GetPgConfigDirectory(pgConfigBinary string, loc InstallationLocation) (string, error) {
-	out, err := exec.Command(pgConfigBinary, "--"+string(loc)).Output() //nolint:gosec
+// GetCondifurationParameter retrieves a PostgreSQL installation configuration parameter
+func GetCondifurationParameter(pgConfigBinary string, parameter ConfigurationParameter) (string, error) {
+	out, err := exec.Command(pgConfigBinary, "--"+string(parameter)).Output() //nolint:gosec
 	if err != nil {
-		return "", fmt.Errorf("failed to get the %q value from pg_config: %w", loc, err)
+		return "", fmt.Errorf("failed to get the %q parameter from pg_config: %w", parameter, err)
 	}
 	return strings.TrimSpace(string(out)), nil
 }

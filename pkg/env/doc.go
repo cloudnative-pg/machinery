@@ -14,6 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package env contains several useful functions to manage the system
-// environment
+// Package env contains useful functions to manage the system environment
 package env

@@ -18,7 +18,7 @@ package env
 
 import "os"
 
-// GetOrDefault gets the value of an environment variable of the
+// GetOrDefault gets the value of an environment variable or the
 // passed default value.
 func GetOrDefault(env, def string) string {
 	if value, ok := os.LookupEnv(env); ok {
