@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0](https://github.com/cloudnative-pg/machinery/compare/v0.1.0...v0.2.0) (2025-03-20)
+
+
+### Features
+
+* add pg_config interface ([#88](https://github.com/cloudnative-pg/machinery/issues/88)) ([0fc1fae](https://github.com/cloudnative-pg/machinery/commit/0fc1faed3332d667e2cdec42a90596e4644920a9))
+
+
+### Bug Fixes
+
+* **deps:** update all non-major go dependencies ([#84](https://github.com/cloudnative-pg/machinery/issues/84)) ([fdb8e45](https://github.com/cloudnative-pg/machinery/commit/fdb8e4548fde9ca033b46b8551593d13dbbfec3d))
+
 ## 0.1.0 (2025-02-26)
 
 
