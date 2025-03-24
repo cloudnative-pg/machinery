@@ -42,8 +42,8 @@ const (
 	ShareDir ConfigurationParameter = "sharedir"
 )
 
-// GetCondifurationParameter retrieves a PostgreSQL installation configuration parameter
-func GetCondifurationParameter(pgConfigBinary string, parameter ConfigurationParameter) (string, error) {
+// GetConfigurationParameter retrieves a PostgreSQL installation configuration parameter
+func GetConfigurationParameter(pgConfigBinary string, parameter ConfigurationParameter) (string, error) {
 	out, err := exec.Command(pgConfigBinary, "--"+string(parameter)).Output() //nolint:gosec
 	if err != nil {
 		return "", fmt.Errorf("failed to get the %q parameter from pg_config: %w", parameter, err)
