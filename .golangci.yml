@@ -45,13 +45,16 @@ linters:
       line-length: 120
     nlreturn:
       block-size: 3
+    revive:
+      rules:
+        - name: dot-imports
+          arguments:
+            - allowedPackages:
+                - github.com/onsi/ginkgo/v2
+                - github.com/onsi/gomega
   exclusions:
     generated: lax
     rules:
-      - linters:
-          - revive
-        text: should not use dot imports
-        source: ginkgo|gomega
       - linters:
           - goconst
         path: _test\.go
