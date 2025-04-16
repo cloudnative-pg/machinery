@@ -32,7 +32,7 @@ tasks:
     desc: Run golangci-lint
     env:
       # renovate: datasource=git-refs depName=golangci-lint lookupName=https://github.com/sagikazarmark/daggerverse currentValue=main
-      DAGGER_GOLANGCI_LINT_SHA: e6c14178bcaaff9e102e2a89173ca31479b80629
+      DAGGER_GOLANGCI_LINT_SHA: ceffda4aebd349a24fc00e591b4ed9b801535b65
       # renovate: datasource=docker depName=golangci/golangci-lint versioning=semver
       GOLANGCI_LINT_VERSION: v2.1.2
     cmds:
