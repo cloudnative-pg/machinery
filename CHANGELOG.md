@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/cloudnative-pg/machinery/compare/v0.2.0...v0.2.1) (2025-04-17)
+
+
+### Bug Fixes
+
+* **deps:** update all non-major go dependencies ([#103](https://github.com/cloudnative-pg/machinery/issues/103)) ([c12fbef](https://github.com/cloudnative-pg/machinery/commit/c12fbef05a8b605d8a2ad2437469ab162ca889e7))
+
 ## [0.2.0](https://github.com/cloudnative-pg/machinery/compare/v0.1.0...v0.2.0) (2025-03-27)
 
 
