@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.1](https://github.com/cloudnative-pg/machinery/compare/v0.2.0...v0.2.1) (2025-05-30)
+
+
+### Bug Fixes
+
+* **deps:** update all non-major go dependencies ([#103](https://github.com/cloudnative-pg/machinery/issues/103)) ([c12fbef](https://github.com/cloudnative-pg/machinery/commit/c12fbef05a8b605d8a2ad2437469ab162ca889e7))
+* **deps:** update module github.com/go-logr/logr to v1.4.3 ([#125](https://github.com/cloudnative-pg/machinery/issues/125)) ([10b85e8](https://github.com/cloudnative-pg/machinery/commit/10b85e80f4fa0e1ac414f4ad9dfd81fa9a22d945))
+* **deps:** update module golang.org/x/sys to v0.33.0 ([#116](https://github.com/cloudnative-pg/machinery/issues/116)) ([092d91d](https://github.com/cloudnative-pg/machinery/commit/092d91d775f993a632e8a00d57e554597fc1bc00))
+
 ## [0.2.0](https://github.com/cloudnative-pg/machinery/compare/v0.1.0...v0.2.0) (2025-03-27)
 
 
