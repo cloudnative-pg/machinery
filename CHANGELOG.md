@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.3.0](https://github.com/cloudnative-pg/machinery/compare/v0.2.0...v0.3.0) (2025-07-02)
+
+
+### Features
+
+* add `hash` pkg ([#128](https://github.com/cloudnative-pg/machinery/issues/128)) ([db1f40a](https://github.com/cloudnative-pg/machinery/commit/db1f40a60719c93c863f0b47520efc4c6819ed48))
+
+
+### Bug Fixes
+
+* **deps:** update all non-major go dependencies ([#103](https://github.com/cloudnative-pg/machinery/issues/103)) ([c12fbef](https://github.com/cloudnative-pg/machinery/commit/c12fbef05a8b605d8a2ad2437469ab162ca889e7))
+* **deps:** update module github.com/go-logr/logr to v1.4.3 ([#125](https://github.com/cloudnative-pg/machinery/issues/125)) ([10b85e8](https://github.com/cloudnative-pg/machinery/commit/10b85e80f4fa0e1ac414f4ad9dfd81fa9a22d945))
+* **deps:** update module golang.org/x/sys to v0.33.0 ([#116](https://github.com/cloudnative-pg/machinery/issues/116)) ([092d91d](https://github.com/cloudnative-pg/machinery/commit/092d91d775f993a632e8a00d57e554597fc1bc00))
+* **deps:** update module k8s.io/apimachinery to v0.33.2 ([#111](https://github.com/cloudnative-pg/machinery/issues/111)) ([872299c](https://github.com/cloudnative-pg/machinery/commit/872299c2f294deafd71a792bc59886989047a1be))
+* **deps:** update module sigs.k8s.io/controller-runtime to v0.21.0 ([#122](https://github.com/cloudnative-pg/machinery/issues/122)) ([ed57704](https://github.com/cloudnative-pg/machinery/commit/ed577046d562fdbbbb9de172aeee100f7b4e897f))
+
 ## [0.2.0](https://github.com/cloudnative-pg/machinery/compare/v0.1.0...v0.2.0) (2025-03-27)
 
 
