@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/cloudnative-pg/machinery/compare/v0.3.0...v0.3.1) (2025-07-11)
+
+
+### Bug Fixes
+
+* **deps:** update module golang.org/x/sys to v0.34.0 ([#133](https://github.com/cloudnative-pg/machinery/issues/133)) ([9a28148](https://github.com/cloudnative-pg/machinery/commit/9a28148be84299b06f2eb78db9a685aa87d4666a))
+
 ## [0.3.0](https://github.com/cloudnative-pg/machinery/compare/v0.2.0...v0.3.0) (2025-07-02)
 
 
