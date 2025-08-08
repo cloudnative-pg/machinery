@@ -13,7 +13,7 @@ require (
 	github.com/spf13/pflag v1.0.7
 	github.com/thoas/go-funk v0.9.3
 	go.uber.org/zap v1.27.0
-	golang.org/x/sys v0.34.0
+	golang.org/x/sys v0.35.0
 	k8s.io/apimachinery v0.33.3
 	k8s.io/klog/v2 v2.130.1
 	sigs.k8s.io/controller-runtime v0.21.0
