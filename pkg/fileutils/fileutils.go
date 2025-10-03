@@ -366,15 +366,15 @@ func MoveFile(sourcePath, destPath string) (err error) {
 func RemoveDirectoryContent(dir string) (err error) {
 	names, err := GetDirectoryContent(dir)
 	if err != nil {
-		return
+		return err
 	}
 	for _, name := range names {
 		err = os.RemoveAll(filepath.Join(dir, name))
 		if err != nil {
-			return
+			return err
 		}
 	}
-	return
+	return err
 }
 
 // RemoveFile removes a specified file. Also works if a directory is empty.
@@ -400,7 +400,7 @@ func RemoveDirectory(dir string) error {
 func GetDirectoryContent(dir string) (files []string, err error) {
 	directory, err := os.Open(dir) // #nosec
 	if err != nil {
-		return
+		return files, err
 	}
 	defer func() {
 		closeErr := directory.Close()
@@ -412,7 +412,7 @@ func GetDirectoryContent(dir string) (files []string, err error) {
 	const readAllNames = -1
 	files, err = directory.Readdirnames(readAllNames)
 
-	return
+	return files, err
 }
 
 // RemoveFiles deletes the files and directories specified by the filePaths patterns
