@@ -8,12 +8,12 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/go-logr/logr v1.4.3
 	github.com/lib/pq v1.10.9
-	github.com/onsi/ginkgo/v2 v2.26.0
+	github.com/onsi/ginkgo/v2 v2.27.1
 	github.com/onsi/gomega v1.38.2
 	github.com/spf13/pflag v1.0.10
 	github.com/thoas/go-funk v0.9.3
 	go.uber.org/zap v1.27.0
-	golang.org/x/sys v0.36.0
+	golang.org/x/sys v0.37.0
 	k8s.io/apimachinery v0.33.3
 	k8s.io/klog/v2 v2.130.1
 	sigs.k8s.io/controller-runtime v0.21.0
