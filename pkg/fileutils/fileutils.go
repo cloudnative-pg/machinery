@@ -276,14 +276,22 @@ func ReadFileLines(fileName string) (lines []string, err error) {
 	return lines, nil
 }
 
-// EnsurePgDataPerms ensure PGDATA has 0700 permissions, which are
-// required for PostgreSQL to successfully startup
-func EnsurePgDataPerms(pgData string) error {
-	_, err := os.Stat(pgData)
+// EnsureFileMode ensure the FileMode of an existing file or directory
+func EnsureFileMode(location string, mode os.FileMode) error {
+	stat, err := os.Stat(location)
 	if err != nil {
 		return err
 	}
-	return os.Chmod(pgData, 0o700) // #nosec
+	if stat.Mode().Perm() == mode.Perm() {
+		return nil
+	}
+	return os.Chmod(location, mode)
+}
+
+// EnsurePgDataPerms ensure PGDATA has 0700 permissions, which are
+// required for PostgreSQL to successfully startup
+func EnsurePgDataPerms(pgData string) error {
+	return EnsureFileMode(pgData, 0o700)
 }
 
 // CreateEmptyFile create an empty file or return an error if
