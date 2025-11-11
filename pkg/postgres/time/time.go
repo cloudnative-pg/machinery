@@ -17,21 +17,36 @@ limitations under the License.
 package time
 
 import (
+	"strings"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ConvertToPostgresFormat converts timestamps to PostgreSQL time format, if needed.
-// e.g. "2006-01-02T15:04:05Z07:00" --> "2006-01-02 15:04:05.000000Z07:00"
-// If the conversion fails, the input timestamp is returned as it is.
+// e.g. "2006-01-02T15:04:05Z07:00" --> "2006-01-02 15:04:05.000000+07:00".
+// If the input is already in PostgreSQL timestamp format, it is returned unchanged.
+//
+// This function assumes the input to be in one of RFC3339, RFC3339Micro, or PostgreSQL
+// formats. It does not validate its input.
+//
+// NOTE: for RFC3339 formatted times in UTC zone, the "Z" suffix is changed to "+00"
+// to avoid problems when used for recovery_target_time
 func ConvertToPostgresFormat(timestamp string) string {
+	formatWithoutZ := func(t time.Time) string {
+		formatted := t.Format("2006-01-02 15:04:05.000000Z07:00")
+		// for UTC times, the Z suffix may not be tolerated in use, so prefer +00
+		if strings.HasSuffix(formatted, "Z") {
+			return strings.Replace(formatted, "Z", "+00", 1)
+		}
+		return formatted
+	}
 	if t, err := time.Parse(metav1.RFC3339Micro, timestamp); err == nil {
-		return t.Format("2006-01-02 15:04:05.000000Z07:00")
+		return formatWithoutZ(t)
 	}
 
 	if t, err := time.Parse(time.RFC3339, timestamp); err == nil {
-		return t.Format("2006-01-02 15:04:05.000000Z07:00")
+		return formatWithoutZ(t)
 	}
 
 	return timestamp
