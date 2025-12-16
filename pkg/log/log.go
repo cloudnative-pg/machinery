@@ -25,7 +25,6 @@ import (
 	"runtime"
 
 	"github.com/go-logr/logr"
-	"go.uber.org/zap/zapcore"
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -34,27 +33,27 @@ const (
 	// ErrorLevelString is the string representation of the error level
 	ErrorLevelString = "error"
 	// ErrorLevel is the error level priority
-	ErrorLevel = zapcore.ErrorLevel
+	ErrorLevel = 5
 
 	// InfoLevelString is the string representation of the info level
 	InfoLevelString = "info"
 	// InfoLevel is the info level priority
-	InfoLevel = zapcore.InfoLevel
+	InfoLevel = 3
 
 	// DebugLevelString is the string representation of the debug level
 	DebugLevelString = "debug"
 	// DebugLevel is the debug level priority
-	DebugLevel zapcore.Level = -2
+	DebugLevel = 2
 
 	// TraceLevelString is the string representation of the trace level
 	TraceLevelString = "trace"
 	// TraceLevel is the trace level priority
-	TraceLevel zapcore.Level = -4
+	TraceLevel = 1
 
 	// WarningLevelString is the string representation of the warning level
 	WarningLevelString = "warning"
 	// WarningLevel is the warning level priority
-	WarningLevel = zapcore.WarnLevel
+	WarningLevel = 4
 
 	// DefaultLevelString is the string representation of the default level
 	DefaultLevelString = InfoLevelString
@@ -122,23 +121,23 @@ func (l *logger) Enabled() bool {
 }
 
 func (l *logger) Error(err error, msg string, keysAndValues ...interface{}) {
-	l.enrich(false).V(int(-ErrorLevel)).Error(err, msg, keysAndValues...)
+	l.enrich(false).V(int(ErrorLevel)).Error(err, msg, keysAndValues...)
 }
 
 func (l *logger) Info(msg string, keysAndValues ...interface{}) {
-	l.enrich(false).V(int(-InfoLevel)).Info(msg, keysAndValues...)
+	l.enrich(false).V(int(InfoLevel)).Info(msg, keysAndValues...)
 }
 
 func (l *logger) Warning(msg string, keysAndValues ...interface{}) {
-	l.enrich(false).V(int(-WarningLevel)).Info(msg, keysAndValues...)
+	l.enrich(false).V(int(WarningLevel)).Info(msg, keysAndValues...)
 }
 
 func (l *logger) Debug(msg string, keysAndValues ...interface{}) {
-	l.enrich(true).V(int(-DebugLevel)).Info(msg, keysAndValues...)
+	l.enrich(true).V(int(DebugLevel)).Info(msg, keysAndValues...)
 }
 
 func (l *logger) Trace(msg string, keysAndValues ...interface{}) {
-	l.enrich(true).V(int(-TraceLevel)).Info(msg, keysAndValues...)
+	l.enrich(true).V(int(TraceLevel)).Info(msg, keysAndValues...)
 }
 
 func (l *logger) WithValues(keysAndValues ...interface{}) Logger {
