@@ -30,14 +30,14 @@ import (
 // This function assumes the input to be in one of RFC3339, RFC3339Micro, or PostgreSQL
 // formats. It does not validate its input.
 //
-// NOTE: for RFC3339 formatted times in UTC zone, the "Z" suffix is changed to "+00"
+// NOTE: for RFC3339 formatted times in UTC zone, the "Z" suffix is changed to "+00:00"
 // to avoid problems when used for recovery_target_time
 func ConvertToPostgresFormat(timestamp string) string {
 	formatWithoutZ := func(t time.Time) string {
 		formatted := t.Format("2006-01-02 15:04:05.000000Z07:00")
-		// for UTC times, the Z suffix may not be tolerated in use, so prefer +00
+		// for UTC times, the Z suffix may not be tolerated in use, so prefer +00:00
 		if strings.HasSuffix(formatted, "Z") {
-			return strings.Replace(formatted, "Z", "+00", 1)
+			return strings.Replace(formatted, "Z", "+00:00", 1)
 		}
 		return formatted
 	}
