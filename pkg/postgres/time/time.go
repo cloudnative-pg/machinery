@@ -27,8 +27,8 @@ import (
 // e.g. "2006-01-02T15:04:05Z07:00" --> "2006-01-02 15:04:05.000000+07:00".
 // If the input is already in PostgreSQL timestamp format, it is returned unchanged.
 //
-// This function assumes the input to be in one of RFC3339, RFC3339Micro, or PostgreSQL
-// formats. It does not validate its input.
+// This function assumes the input to be in one of RFC3339, RFC3339Micro, PostgreSQL,
+// or RFC3339-like without timezone formats. It does not validate its input.
 //
 // NOTE: for RFC3339 formatted times in UTC zone, the "Z" suffix is changed to "+00:00"
 // to avoid problems when used for recovery_target_time
@@ -47,6 +47,13 @@ func ConvertToPostgresFormat(timestamp string) string {
 
 	if t, err := time.Parse(time.RFC3339, timestamp); err == nil {
 		return formatWithoutZ(t)
+	}
+
+	// Handle RFC3339-like format without timezone (e.g., "2006-01-02T15:04:05")
+	// This format is accepted by ParseTargetTime in pkg/types/time.go
+	const rfc3339NoTZ = "2006-01-02T15:04:05"
+	if t, err := time.Parse(rfc3339NoTZ, timestamp); err == nil {
+		return t.Format("2006-01-02 15:04:05")
 	}
 
 	return timestamp
