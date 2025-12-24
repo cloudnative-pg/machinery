@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.2](https://github.com/cloudnative-pg/machinery/compare/v0.3.1...v0.3.2) (2025-12-23)
+
+
+### Bug Fixes
+
+* **deps:** update all non-major go dependencies ([#148](https://github.com/cloudnative-pg/machinery/issues/148)) ([70a2c52](https://github.com/cloudnative-pg/machinery/commit/70a2c5241d77890167f83a02467317d4582ef2fc))
+* **deps:** update all non-major go dependencies ([#162](https://github.com/cloudnative-pg/machinery/issues/162)) ([d97a4ac](https://github.com/cloudnative-pg/machinery/commit/d97a4acfd08e91c46435bff4d0d0a6c63668db92))
+* **deps:** update all non-major go dependencies ([#183](https://github.com/cloudnative-pg/machinery/issues/183)) ([e44d238](https://github.com/cloudnative-pg/machinery/commit/e44d2389b2c57548db9efed176fb101e4c6a42dc))
+* **deps:** update module github.com/onsi/ginkgo/v2 to v2.27.2 ([#165](https://github.com/cloudnative-pg/machinery/issues/165)) ([29e4c97](https://github.com/cloudnative-pg/machinery/commit/29e4c97ccbf4803c43d40b7422909278543290d6))
+* **deps:** update module golang.org/x/sys to v0.38.0 ([#180](https://github.com/cloudnative-pg/machinery/issues/180)) ([700b602](https://github.com/cloudnative-pg/machinery/commit/700b60296faafb61341b3ca5aca3acefc3b18aca))
+* **deps:** update module k8s.io/apimachinery to v0.35.0 ([#181](https://github.com/cloudnative-pg/machinery/issues/181)) ([fdce40b](https://github.com/cloudnative-pg/machinery/commit/fdce40bf26e1705fd46c8416524699ce5498931a))
+* **deps:** update module sigs.k8s.io/controller-runtime to v0.22.3 ([#150](https://github.com/cloudnative-pg/machinery/issues/150)) ([7c57887](https://github.com/cloudnative-pg/machinery/commit/7c578870bd6eec693950ddeca32b707ff3021364))
+* **deps:** update module sigs.k8s.io/controller-runtime to v0.22.4 ([#171](https://github.com/cloudnative-pg/machinery/issues/171)) ([523c802](https://github.com/cloudnative-pg/machinery/commit/523c802778cf7ebeb26ee5ac555886c546fa377c))
+
 ## [0.3.1](https://github.com/cloudnative-pg/machinery/compare/v0.3.0...v0.3.1) (2025-08-11)
 
 
