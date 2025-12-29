@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.3](https://github.com/cloudnative-pg/machinery/compare/v0.3.2...v0.3.3) (2025-12-29)
+
+
+### Bug Fixes
+
+* **time:** ensure consistent UTC handling for RFC3339 timestamps ([e7b9b57](https://github.com/cloudnative-pg/machinery/commit/e7b9b571b47b136045dcfdc91de177958cb97e62)), closes [#167](https://github.com/cloudnative-pg/machinery/issues/167)
+
 ## [0.3.2](https://github.com/cloudnative-pg/machinery/compare/v0.3.1...v0.3.2) (2025-12-23)
 
 
