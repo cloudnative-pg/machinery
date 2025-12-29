@@ -30,7 +30,25 @@ var _ = Describe("Time conversion", func() {
 		res := ConvertToPostgresFormat("2021-09-01T10:22:47+03:00")
 		Expect(res).To(BeEquivalentTo("2021-09-01 10:22:47.000000+03:00"))
 	})
-	It("return same input string if not in RFC3339 format", func() {
+	It("avoids the Z suffix when dealing with RFC3339(Micro) in UTC zone", func() {
+		res := ConvertToPostgresFormat("2021-09-01T10:22:47Z")
+		Expect(res).To(BeEquivalentTo("2021-09-01 10:22:47.000000+00:00"))
+		res = ConvertToPostgresFormat("2021-09-01T10:22:47.015625Z")
+		Expect(res).To(BeEquivalentTo("2021-09-01 10:22:47.015625+00:00"))
+	})
+	It("converts RFC3339-like format without timezone to PostgreSQL format as UTC", func() {
+		// This format is accepted by ParseTargetTime in pkg/types/time.go.
+		// It is interpreted as UTC for consistency with ParseTargetTime behavior.
+		res := ConvertToPostgresFormat("2023-07-06T08:00:39")
+		Expect(res).To(BeEquivalentTo("2023-07-06 08:00:39.000000+00:00"))
+	})
+	It("preserves non-UTC timezone offsets in RFC3339Micro format", func() {
+		res := ConvertToPostgresFormat("2021-09-01T10:22:47.123456+05:30")
+		Expect(res).To(BeEquivalentTo("2021-09-01 10:22:47.123456+05:30"))
+		res = ConvertToPostgresFormat("2021-09-01T10:22:47.123456-08:00")
+		Expect(res).To(BeEquivalentTo("2021-09-01 10:22:47.123456-08:00"))
+	})
+	It("returns same input string if already in PostgreSQL format", func() {
 		res := ConvertToPostgresFormat("2001-09-29 01:02:03")
 		Expect(res).To(BeEquivalentTo("2001-09-29 01:02:03"))
 	})
