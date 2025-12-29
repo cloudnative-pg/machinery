@@ -42,7 +42,7 @@ func ConvertToPostgresFormat(timestamp string) string {
 		formatted := t.Format("2006-01-02 15:04:05.000000Z07:00")
 		// for UTC times, the Z suffix may not be tolerated in use, so prefer +00:00
 		if strings.HasSuffix(formatted, "Z") {
-			return strings.Replace(formatted, "Z", "+00:00", 1)
+			return strings.TrimSuffix(formatted, "Z") + "+00:00"
 		}
 		return formatted
 	}
