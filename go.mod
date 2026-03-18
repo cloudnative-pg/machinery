@@ -7,7 +7,7 @@ toolchain go1.26.1
 require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/go-logr/logr v1.4.3
-	github.com/lib/pq v1.11.2
+	github.com/lib/pq v1.12.0
 	github.com/onsi/ginkgo/v2 v2.28.1
 	github.com/onsi/gomega v1.39.1
 	github.com/spf13/pflag v1.0.10
