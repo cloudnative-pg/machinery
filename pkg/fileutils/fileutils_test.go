@@ -314,6 +314,18 @@ var _ = Describe("RemoveFiles", func() {
 		_, err = os.Stat(filepath.Join(tempDir, "pgsql_tmp1234.0"))
 		Expect(os.IsNotExist(err)).To(BeTrue(), "Expected pgsql_tmp1234.0 file to be removed")
 	})
+
+	It("does not remove basePath itself when a pattern matches it", func(ctx SpecContext) {
+		err := RemoveFiles(ctx, tempDir, []string{"", "."})
+		Expect(err).NotTo(HaveOccurred())
+
+		_, err = os.Stat(tempDir)
+		Expect(err).NotTo(HaveOccurred(), "Expected basePath to not be removed")
+
+		// Verify contents are still intact
+		_, err = os.Stat(filepath.Join(tempDir, "file1.txt"))
+		Expect(err).NotTo(HaveOccurred(), "Expected file1.txt to not be removed")
+	})
 })
 
 var _ = Describe("RemoveRestoreExcludedFiles", func() {

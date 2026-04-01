@@ -456,7 +456,11 @@ func RemoveFiles(ctx context.Context, basePath string, filePaths []string) error
 		if err != nil {
 			return err
 		}
+		cleanBasePath := filepath.Clean(basePath)
 		for _, match := range matches {
+			if match == cleanBasePath {
+				continue
+			}
 			contextLogger.Debug("Removing path", "path", match)
 			if err := os.RemoveAll(match); err != nil {
 				return err
