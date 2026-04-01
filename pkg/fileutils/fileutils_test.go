@@ -290,6 +290,30 @@ var _ = Describe("RemoveFiles", func() {
 		_, err = os.Stat(filepath.Join(tempDir, "dir1"))
 		Expect(err).NotTo(HaveOccurred(), "Expected dir1 to not be removed")
 	})
+
+	It("removes non-empty directories matched by glob patterns", func(ctx SpecContext) {
+		// Create a non-empty directory matching a glob pattern (e.g. pgsql_tmp*)
+		Expect(os.Mkdir(filepath.Join(tempDir, "pgsql_tmp"), 0o750)).To(Succeed())
+		Expect(os.WriteFile(filepath.Join(tempDir, "pgsql_tmp", "tmpfile"), []byte("test"), 0o600)).To(Succeed())
+		Expect(os.Mkdir(filepath.Join(tempDir, "pgsql_tmp_ext_sampling"), 0o750)).To(Succeed())
+		Expect(os.WriteFile(
+			filepath.Join(tempDir, "pgsql_tmp_ext_sampling", "data"), []byte("test"), 0o600,
+		)).To(Succeed())
+		// Also create a regular file matching the same pattern
+		Expect(os.WriteFile(filepath.Join(tempDir, "pgsql_tmp1234.0"), []byte("test"), 0o600)).To(Succeed())
+
+		err := RemoveFiles(ctx, tempDir, []string{"pgsql_tmp*"})
+		Expect(err).NotTo(HaveOccurred())
+
+		_, err = os.Stat(filepath.Join(tempDir, "pgsql_tmp"))
+		Expect(os.IsNotExist(err)).To(BeTrue(), "Expected pgsql_tmp directory to be removed")
+
+		_, err = os.Stat(filepath.Join(tempDir, "pgsql_tmp_ext_sampling"))
+		Expect(os.IsNotExist(err)).To(BeTrue(), "Expected pgsql_tmp_ext_sampling directory to be removed")
+
+		_, err = os.Stat(filepath.Join(tempDir, "pgsql_tmp1234.0"))
+		Expect(os.IsNotExist(err)).To(BeTrue(), "Expected pgsql_tmp1234.0 file to be removed")
+	})
 })
 
 var _ = Describe("RemoveRestoreExcludedFiles", func() {
@@ -315,8 +339,14 @@ var _ = Describe("RemoveRestoreExcludedFiles", func() {
 				Expect(os.MkdirAll(dirOfTheFile, 0o750)).To(Succeed())
 			}
 			Expect(os.WriteFile(fullPath, []byte("test"), 0o600)).To(Succeed())
-
 		}
+
+		// Also create a pgsql_tmp directory with contents to simulate
+		// extensions (e.g. vchord) that create directories matching pgsql_tmp*
+		Expect(os.Mkdir(filepath.Join(tempDir, "pgsql_tmp_ext_sampling"), 0o750)).To(Succeed())
+		Expect(os.WriteFile(
+			filepath.Join(tempDir, "pgsql_tmp_ext_sampling", "data"), []byte("test"), 0o600,
+		)).To(Succeed())
 	})
 
 	AfterEach(func() {
@@ -336,6 +366,10 @@ var _ = Describe("RemoveRestoreExcludedFiles", func() {
 				Expect(os.IsNotExist(err)).To(BeTrue(), "Expected file to be removed: "+fullPath)
 			}
 		}
+
+		// Verify that pgsql_tmp* directories created by extensions are also removed
+		_, err := os.Stat(filepath.Join(tempDir, "pgsql_tmp_ext_sampling"))
+		Expect(os.IsNotExist(err)).To(BeTrue(), "Expected pgsql_tmp_ext_sampling directory to be removed")
 	})
 })
 

@@ -418,8 +418,8 @@ func GetDirectoryContent(dir string) (files []string, err error) {
 // RemoveFiles deletes the files and directories specified by the filePaths patterns
 // relative to the basePath. If a pattern ends with "/*", it implies that all the
 // contents of the directory (not the directory itself) matching the pattern should
-// be removed. If a pattern does not end with "/*", then the files matching the
-// pattern will be removed.
+// be removed. If a pattern does not end with "/*", then the files and directories
+// matching the pattern will be removed.
 //
 // Parameters:
 // - ctx: A context used for logging
@@ -457,8 +457,8 @@ func RemoveFiles(ctx context.Context, basePath string, filePaths []string) error
 			return err
 		}
 		for _, match := range matches {
-			contextLogger.Debug("Removing file", "fileName", match)
-			if err := RemoveFile(match); err != nil {
+			contextLogger.Debug("Removing path", "path", match)
+			if err := os.RemoveAll(match); err != nil {
 				return err
 			}
 		}
