@@ -421,6 +421,9 @@ func GetDirectoryContent(dir string) (files []string, err error) {
 // be removed. If a pattern does not end with "/*", then the files and directories
 // matching the pattern will be removed.
 //
+// Patterns that resolve to paths outside basePath are silently skipped
+// as a safety measure against path traversal.
+//
 // Parameters:
 // - ctx: A context used for logging
 // - basePath: The root directory where the filePaths are applied.
@@ -432,13 +435,19 @@ func GetDirectoryContent(dir string) (files []string, err error) {
 // Example:
 // basePath: "/path/to/directory"
 // filePaths: ["file1.txt", "subdir/*"]
-// This would remove "/path/to/directory/file1.txt" and the "path/to/directory/subdir" folder
+// This would remove "/path/to/directory/file1.txt" and the contents of "/path/to/directory/subdir"
 func RemoveFiles(ctx context.Context, basePath string, filePaths []string) error {
 	contextLogger := log.FromContext(ctx)
+	cleanBasePath := filepath.Clean(basePath)
+	basePrefix := cleanBasePath + string(filepath.Separator)
 
 	for _, pattern := range filePaths {
 		if len(pattern) >= 2 && pattern[len(pattern)-2:] == "/*" {
 			dirPath := filepath.Join(basePath, pattern[:len(pattern)-2])
+			if !strings.HasPrefix(dirPath, basePrefix) && dirPath != cleanBasePath {
+				contextLogger.Warning("Skipping path outside basePath", "path", dirPath, "basePath", cleanBasePath)
+				continue
+			}
 			dirExists, err := FileExists(dirPath)
 			if err != nil {
 				return err
@@ -456,9 +465,8 @@ func RemoveFiles(ctx context.Context, basePath string, filePaths []string) error
 		if err != nil {
 			return err
 		}
-		cleanBasePath := filepath.Clean(basePath)
 		for _, match := range matches {
-			if match == cleanBasePath {
+			if !strings.HasPrefix(match, basePrefix) {
 				continue
 			}
 			contextLogger.Debug("Removing path", "path", match)

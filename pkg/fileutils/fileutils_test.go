@@ -326,6 +326,34 @@ var _ = Describe("RemoveFiles", func() {
 		_, err = os.Stat(filepath.Join(tempDir, "file1.txt"))
 		Expect(err).NotTo(HaveOccurred(), "Expected file1.txt to not be removed")
 	})
+
+	It("does not remove paths outside basePath via traversal patterns", func(ctx SpecContext) {
+		// Create a sibling directory that must not be deleted
+		siblingDir := filepath.Join(filepath.Dir(tempDir), "sibling_safe")
+		Expect(os.Mkdir(siblingDir, 0o750)).To(Succeed())
+		Expect(os.WriteFile(filepath.Join(siblingDir, "important.txt"), []byte("keep"), 0o600)).To(Succeed())
+		defer os.RemoveAll(siblingDir)
+
+		// ".." resolves to the parent of basePath
+		// "../*" resolves to siblings of basePath
+		// "../sibling_safe/*" targets sibling directory contents
+		err := RemoveFiles(ctx, tempDir, []string{"..", "../*", "../sibling_safe/*"})
+		Expect(err).NotTo(HaveOccurred())
+
+		// Parent must still exist
+		_, err = os.Stat(filepath.Dir(tempDir))
+		Expect(err).NotTo(HaveOccurred(), "Expected parent directory to not be removed")
+
+		// Sibling must still exist with its contents
+		_, err = os.Stat(siblingDir)
+		Expect(err).NotTo(HaveOccurred(), "Expected sibling directory to not be removed")
+		_, err = os.Stat(filepath.Join(siblingDir, "important.txt"))
+		Expect(err).NotTo(HaveOccurred(), "Expected sibling contents to not be removed")
+
+		// basePath contents must still be intact
+		_, err = os.Stat(filepath.Join(tempDir, "file1.txt"))
+		Expect(err).NotTo(HaveOccurred(), "Expected basePath contents to not be removed")
+	})
 })
 
 var _ = Describe("RemoveRestoreExcludedFiles", func() {
