@@ -292,14 +292,12 @@ var _ = Describe("RemoveFiles", func() {
 	})
 
 	It("removes non-empty directories matched by glob patterns", func(ctx SpecContext) {
-		// Create a non-empty directory matching a glob pattern (e.g. pgsql_tmp*)
 		Expect(os.Mkdir(filepath.Join(tempDir, "pgsql_tmp"), 0o750)).To(Succeed())
 		Expect(os.WriteFile(filepath.Join(tempDir, "pgsql_tmp", "tmpfile"), []byte("test"), 0o600)).To(Succeed())
 		Expect(os.Mkdir(filepath.Join(tempDir, "pgsql_tmp_ext_sampling"), 0o750)).To(Succeed())
 		Expect(os.WriteFile(
 			filepath.Join(tempDir, "pgsql_tmp_ext_sampling", "data"), []byte("test"), 0o600,
 		)).To(Succeed())
-		// Also create a regular file matching the same pattern
 		Expect(os.WriteFile(filepath.Join(tempDir, "pgsql_tmp1234.0"), []byte("test"), 0o600)).To(Succeed())
 
 		err := RemoveFiles(ctx, tempDir, []string{"pgsql_tmp*"})
@@ -322,35 +320,40 @@ var _ = Describe("RemoveFiles", func() {
 		_, err = os.Stat(tempDir)
 		Expect(err).NotTo(HaveOccurred(), "Expected basePath to not be removed")
 
-		// Verify contents are still intact
 		_, err = os.Stat(filepath.Join(tempDir, "file1.txt"))
 		Expect(err).NotTo(HaveOccurred(), "Expected file1.txt to not be removed")
 	})
 
+	It("removes basePath contents but not basePath itself with ./* pattern", func(ctx SpecContext) {
+		err := RemoveFiles(ctx, tempDir, []string{"./*"})
+		Expect(err).NotTo(HaveOccurred())
+
+		_, err = os.Stat(tempDir)
+		Expect(err).NotTo(HaveOccurred(), "Expected basePath to not be removed")
+
+		entries, err := os.ReadDir(tempDir)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(entries).To(BeEmpty(), "Expected basePath contents to be removed")
+	})
+
 	It("does not remove paths outside basePath via traversal patterns", func(ctx SpecContext) {
-		// Create a sibling directory that must not be deleted
 		siblingDir := filepath.Join(filepath.Dir(tempDir), "sibling_safe")
 		Expect(os.Mkdir(siblingDir, 0o750)).To(Succeed())
 		Expect(os.WriteFile(filepath.Join(siblingDir, "important.txt"), []byte("keep"), 0o600)).To(Succeed())
-		defer os.RemoveAll(siblingDir)
+		defer func() { _ = os.RemoveAll(siblingDir) }()
 
-		// ".." resolves to the parent of basePath
-		// "../*" resolves to siblings of basePath
-		// "../sibling_safe/*" targets sibling directory contents
+		// Exercises both glob ("..","../*") and directory pattern ("../sibling_safe/*") branches
 		err := RemoveFiles(ctx, tempDir, []string{"..", "../*", "../sibling_safe/*"})
 		Expect(err).NotTo(HaveOccurred())
 
-		// Parent must still exist
 		_, err = os.Stat(filepath.Dir(tempDir))
 		Expect(err).NotTo(HaveOccurred(), "Expected parent directory to not be removed")
 
-		// Sibling must still exist with its contents
 		_, err = os.Stat(siblingDir)
 		Expect(err).NotTo(HaveOccurred(), "Expected sibling directory to not be removed")
 		_, err = os.Stat(filepath.Join(siblingDir, "important.txt"))
 		Expect(err).NotTo(HaveOccurred(), "Expected sibling contents to not be removed")
 
-		// basePath contents must still be intact
 		_, err = os.Stat(filepath.Join(tempDir, "file1.txt"))
 		Expect(err).NotTo(HaveOccurred(), "Expected basePath contents to not be removed")
 	})
