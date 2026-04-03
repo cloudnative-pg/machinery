@@ -415,52 +415,71 @@ func GetDirectoryContent(dir string) (files []string, err error) {
 	return files, err
 }
 
-// RemoveFiles deletes the files and directories specified by the filePaths patterns
-// relative to the basePath. If a pattern ends with "/*", it implies that all the
-// contents of the directory (not the directory itself) matching the pattern should
-// be removed. If a pattern does not end with "/*", then the files matching the
-// pattern will be removed.
+// RemoveFiles deletes the files and directories specified by the filePaths
+// patterns relative to basePath. Patterns ending with "/*" remove the directory
+// contents but preserve the directory itself. Other patterns remove all matching
+// files and directories.
 //
-// Parameters:
-// - ctx: A context used for logging
-// - basePath: The root directory where the filePaths are applied.
-// - filePaths: List of relative paths or patterns to be removed.
-//
-// Returns:
-// - error: Any error encountered during the removal process, or nil if the operation was successful.
-//
-// Example:
-// basePath: "/path/to/directory"
-// filePaths: ["file1.txt", "subdir/*"]
-// This would remove "/path/to/directory/file1.txt" and the "path/to/directory/subdir" folder
+// Patterns that resolve outside basePath are skipped as a safety measure against
+// path traversal. basePath itself is never removed.
 func RemoveFiles(ctx context.Context, basePath string, filePaths []string) error {
-	contextLogger := log.FromContext(ctx)
-
 	for _, pattern := range filePaths {
-		if len(pattern) >= 2 && pattern[len(pattern)-2:] == "/*" {
-			dirPath := filepath.Join(basePath, pattern[:len(pattern)-2])
-			dirExists, err := FileExists(dirPath)
-			if err != nil {
+		if dirPattern, ok := strings.CutSuffix(pattern, "/*"); ok {
+			if err := removeDirectoryPattern(ctx, basePath, dirPattern); err != nil {
 				return err
-			}
-			if dirExists {
-				contextLogger.Debug("Removing directory", "dirPath", dirPath)
-				if err := RemoveDirectoryContent(dirPath); err != nil {
-					return err
-				}
 			}
 			continue
 		}
 
-		matches, err := filepath.Glob(filepath.Join(basePath, pattern))
-		if err != nil {
+		if err := removeGlobMatches(ctx, basePath, pattern); err != nil {
 			return err
 		}
-		for _, match := range matches {
-			contextLogger.Debug("Removing file", "fileName", match)
-			if err := RemoveFile(match); err != nil {
-				return err
-			}
+	}
+	return nil
+}
+
+// removeDirectoryPattern removes the contents of the directory identified by
+// dirPattern relative to basePath, preserving the directory itself.
+func removeDirectoryPattern(ctx context.Context, basePath, dirPattern string) error {
+	contextLogger := log.FromContext(ctx)
+	cleanBasePath := filepath.Clean(basePath)
+	dirPath := filepath.Join(basePath, dirPattern)
+
+	if dirPath != cleanBasePath && !strings.HasPrefix(dirPath, cleanBasePath+string(filepath.Separator)) {
+		contextLogger.Warning("Skipping path outside basePath", "path", dirPath, "basePath", cleanBasePath)
+		return nil
+	}
+
+	dirExists, err := FileExists(dirPath)
+	if err != nil {
+		return err
+	}
+	if !dirExists {
+		return nil
+	}
+
+	contextLogger.Debug("Removing directory contents", "dirPath", dirPath)
+	return RemoveDirectoryContent(dirPath)
+}
+
+// removeGlobMatches removes all files and directories matching the glob pattern
+// relative to basePath. Matches outside basePath are skipped.
+func removeGlobMatches(ctx context.Context, basePath, pattern string) error {
+	contextLogger := log.FromContext(ctx)
+	basePrefix := filepath.Clean(basePath) + string(filepath.Separator)
+
+	matches, err := filepath.Glob(filepath.Join(basePath, pattern))
+	if err != nil {
+		return err
+	}
+	for _, match := range matches {
+		if !strings.HasPrefix(match, basePrefix) {
+			contextLogger.Warning("Skipping path outside basePath", "path", match, "basePath", basePath)
+			continue
+		}
+		contextLogger.Debug("Removing path", "path", match)
+		if err := os.RemoveAll(match); err != nil {
+			return err
 		}
 	}
 	return nil
