@@ -12,7 +12,7 @@ require (
 	github.com/onsi/gomega v1.39.1
 	github.com/spf13/pflag v1.0.10
 	github.com/thoas/go-funk v0.9.3
-	go.uber.org/zap v1.27.1
+	go.uber.org/zap v1.28.0
 	golang.org/x/sys v0.43.0
 	k8s.io/apimachinery v0.36.0
 	k8s.io/klog/v2 v2.140.0
