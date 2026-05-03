@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.5.0](https://github.com/cloudnative-pg/machinery/compare/v0.4.0...v0.5.0) (2026-05-03)
+
+
+### Features
+
+* **ip:** assign copyright to the Linux Foundation ([#234](https://github.com/cloudnative-pg/machinery/issues/234)) ([f2ade1a](https://github.com/cloudnative-pg/machinery/commit/f2ade1a59065e552361a6659fb4894dcf0a54719))
+
+
+### Bug Fixes
+
+* **deps:** update all non-major go dependencies ([#238](https://github.com/cloudnative-pg/machinery/issues/238)) ([66d88d1](https://github.com/cloudnative-pg/machinery/commit/66d88d15a6ee956be0bc6a7fc03c5e4e0c9500f4))
+* **deps:** update module github.com/onsi/ginkgo/v2 to v2.28.2 ([#235](https://github.com/cloudnative-pg/machinery/issues/235)) ([166d5f8](https://github.com/cloudnative-pg/machinery/commit/166d5f85e0477b7ea418cfa62c17a0988715a546))
+* **deps:** update module go.uber.org/zap to v1.28.0 ([#237](https://github.com/cloudnative-pg/machinery/issues/237)) ([643d94b](https://github.com/cloudnative-pg/machinery/commit/643d94bc9e75a36a1e7ee7daaf4cee8d69febca4))
+* **deps:** update module k8s.io/apimachinery to v0.35.4 ([#228](https://github.com/cloudnative-pg/machinery/issues/228)) ([935f6c1](https://github.com/cloudnative-pg/machinery/commit/935f6c11190e8149569c5902752d7fc7d5684c4e))
+* **deps:** update module k8s.io/apimachinery to v0.36.0 ([#233](https://github.com/cloudnative-pg/machinery/issues/233)) ([534766e](https://github.com/cloudnative-pg/machinery/commit/534766ea0ab7c83087160dc240a2ab1f3894b01c))
+* **deps:** update module sigs.k8s.io/controller-runtime to v0.24.0 ([#239](https://github.com/cloudnative-pg/machinery/issues/239)) ([cc5262a](https://github.com/cloudnative-pg/machinery/commit/cc5262a2ddb5be3431104305652967db8b8be9e2))
+* **lint:** remove silent flag from dagger to show linter output ([#219](https://github.com/cloudnative-pg/machinery/issues/219)) ([8303d56](https://github.com/cloudnative-pg/machinery/commit/8303d568602cbddf8487da55c9d0d3770db4509c))
+
 ## [0.4.0](https://github.com/cloudnative-pg/machinery/compare/v0.3.3...v0.4.0) (2026-04-10)
 
 
