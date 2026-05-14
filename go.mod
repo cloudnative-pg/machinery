@@ -14,7 +14,7 @@ require (
 	github.com/thoas/go-funk v0.9.3
 	go.uber.org/zap v1.28.0
 	golang.org/x/sys v0.44.0
-	k8s.io/apimachinery v0.36.0
+	k8s.io/apimachinery v0.36.1
 	k8s.io/klog/v2 v2.140.0
 	sigs.k8s.io/controller-runtime v0.24.1
 )
