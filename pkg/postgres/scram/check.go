@@ -30,6 +30,11 @@ import (
 	"github.com/xdg-go/scram"
 )
 
+// scramSHA256KeyLen is the SHA-256 digest size; the StoredKey and ServerKey
+// of a SCRAM-SHA-256 secret must both decode to exactly this many bytes.
+// Mirrored from PostgreSQL's src/include/common/scram-common.h.
+const scramSHA256KeyLen = 32
+
 var (
 	// ErrWrongComponents is raised when the proposed hash has not the
 	// right number of components
@@ -40,11 +45,25 @@ var (
 
 	// ErrWrongHashConfig is raised when the hashing function configuration
 	// is not the expected one
-	ErrWrongHashConfig = errors.New("wrong hash config (expected 2 sections divided by ':' in the first block)")
+	ErrWrongHashConfig = errors.New(
+		"wrong hash config (expected '<iterations>:<salt>' in the first '$' section)")
 
 	// ErrWrongKeyComponents is raised when the key components in the SCRAM
 	// hash are not formatted correctly
-	ErrWrongKeyComponents = errors.New("wrong key components (expected 2 sections divided by ':' in the second block)")
+	ErrWrongKeyComponents = errors.New(
+		"wrong key components (expected '<StoredKey>:<ServerKey>' in the last '$' section)")
+
+	// ErrInvalidIterations is raised when the iteration count is not a
+	// positive integer
+	ErrInvalidIterations = errors.New("iteration count must be a positive integer")
+
+	// ErrInvalidStoredKey is raised when the StoredKey does not decode to
+	// the SHA-256 digest size
+	ErrInvalidStoredKey = errors.New("stored key must decode to 32 bytes")
+
+	// ErrInvalidServerKey is raised when the ServerKey does not decode to
+	// the SHA-256 digest size
+	ErrInvalidServerKey = errors.New("server key must decode to 32 bytes")
 )
 
 // parsedHash contains the parsed PostgreSQL hash
@@ -56,7 +75,13 @@ type parsedHash struct {
 }
 
 // Verify checks if the passed SCRAM hash, in the format used by PostgreSQL,
-// corresponds to the given plain text
+// corresponds to the given plain text.
+//
+// The iteration count parsed from the hash drives the PBKDF2 work performed
+// during verification. Callers that may receive attacker-influenced hashes
+// should validate or cap the iteration count before invoking Verify;
+// PostgreSQL itself uses 4096, and values much larger than that are
+// suspicious and can be used to slow down callers arbitrarily.
 func Verify(hash string, plainText string) (bool, error) {
 	parsedHash, err := parsePostgreSQLHash(hash)
 	if err != nil {
@@ -109,6 +134,9 @@ func parsePostgreSQLHash(hash string) (*parsedHash, error) {
 	if err != nil {
 		return nil, fmt.Errorf("while reading the number of iterations: %w", err)
 	}
+	if iterations < 1 {
+		return nil, ErrInvalidIterations
+	}
 
 	rawSalt, err := base64.StdEncoding.DecodeString(hashConfig[1])
 	if err != nil {
@@ -119,10 +147,16 @@ func parsePostgreSQLHash(hash string) (*parsedHash, error) {
 	if err != nil {
 		return nil, fmt.Errorf("while base64-decoding stored key: %w", err)
 	}
+	if len(rawStoredKey) != scramSHA256KeyLen {
+		return nil, ErrInvalidStoredKey
+	}
 
 	rawServerKey, err := base64.StdEncoding.DecodeString(keys[1])
 	if err != nil {
 		return nil, fmt.Errorf("while base64-decoding server key: %w", err)
+	}
+	if len(rawServerKey) != scramSHA256KeyLen {
+		return nil, ErrInvalidServerKey
 	}
 
 	return &parsedHash{

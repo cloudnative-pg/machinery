@@ -107,7 +107,36 @@ var _ = Describe("parsePostgreSQLHash", func() {
 	})
 
 	It("rejects a non-base64 server key", func() {
-		_, err := parsePostgreSQLHash("SCRAM-SHA-256$4096:c2FsdA==$c3RvcmVk:!!!")
+		// Use a properly-sized StoredKey so the failure is the ServerKey's
+		// base64 decoding and not the StoredKey's length check.
+		_, err := parsePostgreSQLHash(
+			"SCRAM-SHA-256$4096:c2FsdA==$bpSY5Ze9NUH+I35LC3gVq+DpBfK46iXBxvhAKqVu9pE=:!!!")
 		Expect(err).To(HaveOccurred())
+	})
+
+	It("rejects a zero iteration count", func() {
+		_, err := parsePostgreSQLHash("SCRAM-SHA-256$0:c2FsdA==$" +
+			"bpSY5Ze9NUH+I35LC3gVq+DpBfK46iXBxvhAKqVu9pE=:" +
+			"VpYlBuxyzeCI1KnctrefdljpB1mk3Gp7sBI/t11+NkQ=")
+		Expect(err).To(MatchError(ErrInvalidIterations))
+	})
+
+	It("rejects a negative iteration count", func() {
+		_, err := parsePostgreSQLHash("SCRAM-SHA-256$-1:c2FsdA==$" +
+			"bpSY5Ze9NUH+I35LC3gVq+DpBfK46iXBxvhAKqVu9pE=:" +
+			"VpYlBuxyzeCI1KnctrefdljpB1mk3Gp7sBI/t11+NkQ=")
+		Expect(err).To(MatchError(ErrInvalidIterations))
+	})
+
+	It("rejects a stored key of wrong length", func() {
+		_, err := parsePostgreSQLHash("SCRAM-SHA-256$4096:c2FsdA==$c3RvcmVk:" +
+			"VpYlBuxyzeCI1KnctrefdljpB1mk3Gp7sBI/t11+NkQ=")
+		Expect(err).To(MatchError(ErrInvalidStoredKey))
+	})
+
+	It("rejects a server key of wrong length", func() {
+		_, err := parsePostgreSQLHash("SCRAM-SHA-256$4096:c2FsdA==$" +
+			"bpSY5Ze9NUH+I35LC3gVq+DpBfK46iXBxvhAKqVu9pE=:c2VydmVy")
+		Expect(err).To(MatchError(ErrInvalidServerKey))
 	})
 })
