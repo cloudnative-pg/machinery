@@ -26,38 +26,6 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("GenerateOptions Defaults", func() {
-	It("fills in default iterations when zero", func() {
-		opts := &GenerateOptions{PlainText: "secret"}
-		Expect(opts.Defaults()).To(Succeed())
-		Expect(opts.Iterations).To(Equal(DefaultPostgresIterations))
-	})
-
-	It("preserves a custom iteration count", func() {
-		opts := &GenerateOptions{PlainText: "secret", Iterations: 1024}
-		Expect(opts.Defaults()).To(Succeed())
-		Expect(opts.Iterations).To(Equal(1024))
-	})
-
-	It("generates a salt of the expected length when missing", func() {
-		opts := &GenerateOptions{PlainText: "secret"}
-		Expect(opts.Defaults()).To(Succeed())
-		Expect(opts.Salt).To(HaveLen(DefaultSaltLength))
-	})
-
-	It("preserves a user-provided salt", func() {
-		salt := []byte("0123456789abcdef")
-		opts := &GenerateOptions{PlainText: "secret", Salt: salt}
-		Expect(opts.Defaults()).To(Succeed())
-		Expect(opts.Salt).To(Equal(salt))
-	})
-
-	It("rejects a negative iteration count", func() {
-		opts := &GenerateOptions{PlainText: "secret", Iterations: -1}
-		Expect(opts.Defaults()).To(MatchError(ErrInvalidIterations))
-	})
-})
-
 var _ = Describe("GenerateOptions Generate", func() {
 	It("produces a hash in the PostgreSQL SCRAM-SHA-256 format", func() {
 		opts := &GenerateOptions{
@@ -75,12 +43,38 @@ var _ = Describe("GenerateOptions Generate", func() {
 		Expect(strings.Split(parts[2], ":")).To(HaveLen(2))
 	})
 
-	It("populates defaults when called without explicit options", func() {
+	It("defaults to PostgreSQL's iteration count when none is set", func() {
 		opts := &GenerateOptions{PlainText: "secret"}
 		hash, err := opts.Generate()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(strings.HasPrefix(hash, "SCRAM-SHA-256$4096:")).To(BeTrue())
-		Expect(opts.Salt).To(HaveLen(DefaultSaltLength))
+	})
+
+	It("draws a salt of DefaultSaltLength when none is set", func() {
+		opts := &GenerateOptions{PlainText: "secret"}
+		hash, err := opts.Generate()
+		Expect(err).ToNot(HaveOccurred())
+
+		parsed, err := parsePostgreSQLHash(hash)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(parsed.RawSalt).To(HaveLen(DefaultSaltLength))
+	})
+
+	It("rejects a negative iteration count", func() {
+		opts := &GenerateOptions{PlainText: "secret", Iterations: -1}
+		_, err := opts.Generate()
+		Expect(err).To(MatchError(ErrInvalidIterations))
+	})
+
+	It("does not mutate the receiver between calls", func() {
+		opts := &GenerateOptions{PlainText: "secret"}
+		first, err := opts.Generate()
+		Expect(err).ToNot(HaveOccurred())
+		second, err := opts.Generate()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(opts.Salt).To(BeNil())
+		Expect(opts.Iterations).To(BeZero())
+		Expect(first).ToNot(Equal(second))
 	})
 
 	It("is deterministic for the same salt, iterations and password", func() {
