@@ -42,7 +42,8 @@ type GenerateOptions struct {
 	Salt []byte
 
 	// Iterations is the PBKDF2 iteration count. If zero, Defaults sets it
-	// to DefaultPostgresIterations.
+	// to DefaultPostgresIterations. A negative value is rejected with
+	// ErrInvalidIterations.
 	Iterations int
 
 	// PlainText is the password to be hashed.
@@ -52,6 +53,9 @@ type GenerateOptions struct {
 // Defaults fills in default values for any option that has not already
 // been set.
 func (options *GenerateOptions) Defaults() error {
+	if options.Iterations < 0 {
+		return ErrInvalidIterations
+	}
 	if options.Iterations == 0 {
 		options.Iterations = DefaultPostgresIterations
 	}

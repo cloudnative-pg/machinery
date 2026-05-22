@@ -51,6 +51,11 @@ var _ = Describe("GenerateOptions Defaults", func() {
 		Expect(opts.Defaults()).To(Succeed())
 		Expect(opts.Salt).To(Equal(salt))
 	})
+
+	It("rejects a negative iteration count", func() {
+		opts := &GenerateOptions{PlainText: "secret", Iterations: -1}
+		Expect(opts.Defaults()).To(MatchError(ErrInvalidIterations))
+	})
 })
 
 var _ = Describe("GenerateOptions Generate", func() {
