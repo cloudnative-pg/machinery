@@ -28,12 +28,9 @@ import (
 	"strings"
 
 	"github.com/xdg-go/scram"
-)
 
-// scramSHA256KeyLen is the SHA-256 digest size; the StoredKey and ServerKey
-// of a SCRAM-SHA-256 secret must both decode to exactly this many bytes.
-// Mirrored from PostgreSQL's src/include/common/scram-common.h.
-const scramSHA256KeyLen = 32
+	"github.com/cloudnative-pg/machinery/pkg/postgres/password"
+)
 
 var (
 	// ErrWrongComponents is returned when the hash is not split into the
@@ -148,7 +145,7 @@ func parsePostgreSQLHash(hash string) (*parsedHash, error) {
 	if err != nil {
 		return nil, fmt.Errorf("while base64-decoding stored key: %w", err)
 	}
-	if len(rawStoredKey) != scramSHA256KeyLen {
+	if len(rawStoredKey) != password.SCRAMSHA256KeyLen {
 		return nil, ErrInvalidStoredKey
 	}
 
@@ -156,7 +153,7 @@ func parsePostgreSQLHash(hash string) (*parsedHash, error) {
 	if err != nil {
 		return nil, fmt.Errorf("while base64-decoding server key: %w", err)
 	}
-	if len(rawServerKey) != scramSHA256KeyLen {
+	if len(rawServerKey) != password.SCRAMSHA256KeyLen {
 		return nil, ErrInvalidServerKey
 	}
 

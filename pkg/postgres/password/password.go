@@ -48,8 +48,13 @@ const (
 //   - src/include/common/md5.h        (MD5_PASSWD_LEN, MD5_PASSWD_CHARSET)
 //   - src/include/common/scram-common.h (SCRAM_SHA_256_KEY_LEN)
 const (
-	md5PasswordLen    = 35 // "md5" prefix plus 32 hex digits
-	scramSHA256KeyLen = 32 // SHA-256 digest size
+	md5PasswordLen = 35 // "md5" prefix plus 32 hex digits
+
+	// SCRAMSHA256KeyLen is the byte length of the StoredKey and ServerKey
+	// in a SCRAM-SHA-256 secret. It equals the SHA-256 digest size and
+	// mirrors PostgreSQL's SCRAM_SHA_256_KEY_LEN; the value is fixed by
+	// the SCRAM-SHA-256 specification and will not change.
+	SCRAMSHA256KeyLen = 32
 )
 
 // GetType reports how PostgreSQL would classify the given shadow_pass value.
@@ -114,11 +119,11 @@ func isSCRAMSHA256(s string) bool {
 		return false
 	}
 	storedKey, err := base64.StdEncoding.DecodeString(keys[0])
-	if err != nil || len(storedKey) != scramSHA256KeyLen {
+	if err != nil || len(storedKey) != SCRAMSHA256KeyLen {
 		return false
 	}
 	serverKey, err := base64.StdEncoding.DecodeString(keys[1])
-	if err != nil || len(serverKey) != scramSHA256KeyLen {
+	if err != nil || len(serverKey) != SCRAMSHA256KeyLen {
 		return false
 	}
 	return true
