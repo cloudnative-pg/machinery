@@ -128,6 +128,21 @@ var _ = Describe("parsePostgreSQLHash", func() {
 		Expect(err).To(MatchError(ErrInvalidIterations))
 	})
 
+	It("accepts an iteration count at the 32-bit ceiling", func() {
+		parsed, err := parsePostgreSQLHash("SCRAM-SHA-256$2147483647:c2FsdA==$" +
+			"bpSY5Ze9NUH+I35LC3gVq+DpBfK46iXBxvhAKqVu9pE=:" +
+			"VpYlBuxyzeCI1KnctrefdljpB1mk3Gp7sBI/t11+NkQ=")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(parsed.Iterations).To(Equal(2147483647))
+	})
+
+	It("rejects an iteration count above the 32-bit ceiling", func() {
+		_, err := parsePostgreSQLHash("SCRAM-SHA-256$2147483648:c2FsdA==$" +
+			"bpSY5Ze9NUH+I35LC3gVq+DpBfK46iXBxvhAKqVu9pE=:" +
+			"VpYlBuxyzeCI1KnctrefdljpB1mk3Gp7sBI/t11+NkQ=")
+		Expect(err).To(HaveOccurred())
+	})
+
 	It("rejects a stored key of wrong length", func() {
 		_, err := parsePostgreSQLHash("SCRAM-SHA-256$4096:c2FsdA==$c3RvcmVk:" +
 			"VpYlBuxyzeCI1KnctrefdljpB1mk3Gp7sBI/t11+NkQ=")

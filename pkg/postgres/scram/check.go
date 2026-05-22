@@ -76,11 +76,10 @@ type parsedHash struct {
 // corresponds to the given plain text. It returns true on a match, false on
 // mismatch, and a non-nil error only when hash is malformed.
 //
-// The iteration count parsed from the hash drives the PBKDF2 work performed
-// during verification. Callers that may receive attacker-influenced hashes
-// should validate or cap the iteration count before invoking Verify;
-// PostgreSQL itself uses 4096, and values much larger than that are
-// suspicious and can be used to slow down callers arbitrarily.
+// Verify performs PBKDF2 work proportional to the iteration count parsed
+// from the hash, which the parser caps at 2^31-1 to match libpq.
+// Callers that may receive attacker-influenced hashes should validate or
+// cap the count further; PostgreSQL itself stores 4096 by default.
 func Verify(hash string, plainText string) (bool, error) {
 	parsedHash, err := parsePostgreSQLHash(hash)
 	if err != nil {
@@ -128,10 +127,14 @@ func parsePostgreSQLHash(hash string) (*parsedHash, error) {
 		return nil, ErrWrongKeyComponents
 	}
 
-	iterations, err := strconv.Atoi(hashConfig[0])
+	// Match libpq's parse_scram_secret, which strtol's into a C int and
+	// rejects ERANGE; cap at 32 bits so any hash a Postgres server would
+	// accept is also accepted here, and no larger.
+	iter64, err := strconv.ParseInt(hashConfig[0], 10, 32)
 	if err != nil {
 		return nil, fmt.Errorf("while reading the number of iterations: %w", err)
 	}
+	iterations := int(iter64)
 	if iterations < 1 {
 		return nil, ErrInvalidIterations
 	}
