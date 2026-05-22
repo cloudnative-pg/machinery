@@ -36,33 +36,34 @@ import (
 const scramSHA256KeyLen = 32
 
 var (
-	// ErrWrongComponents is raised when the proposed hash has not the
-	// right number of components
+	// ErrWrongComponents is returned when the hash is not split into the
+	// three '$'-separated sections of the canonical SCRAM-SHA-256 form.
 	ErrWrongComponents = errors.New("wrong number of components in password hash: expected 3 sections divided by '$'")
 
-	// ErrWrongHashType is raised when the hash type is not correct
+	// ErrWrongHashType is returned when the leading section of the hash is
+	// not the literal "SCRAM-SHA-256".
 	ErrWrongHashType = errors.New("wrong hash type (expected SCRAM-SHA-256)")
 
-	// ErrWrongHashConfig is raised when the hashing function configuration
-	// is not the expected one
+	// ErrWrongHashConfig is returned when the iter/salt section is not in
+	// the expected "<iterations>:<salt>" form.
 	ErrWrongHashConfig = errors.New(
 		"wrong hash config (expected '<iterations>:<salt>' in the first '$' section)")
 
-	// ErrWrongKeyComponents is raised when the key components in the SCRAM
-	// hash are not formatted correctly
+	// ErrWrongKeyComponents is returned when the key section is not in the
+	// expected "<StoredKey>:<ServerKey>" form.
 	ErrWrongKeyComponents = errors.New(
 		"wrong key components (expected '<StoredKey>:<ServerKey>' in the last '$' section)")
 
-	// ErrInvalidIterations is raised when the iteration count is not a
-	// positive integer
+	// ErrInvalidIterations is returned when the iteration count is not a
+	// positive integer.
 	ErrInvalidIterations = errors.New("iteration count must be a positive integer")
 
-	// ErrInvalidStoredKey is raised when the StoredKey does not decode to
-	// the SHA-256 digest size
+	// ErrInvalidStoredKey is returned when the StoredKey does not decode to
+	// the SHA-256 digest size.
 	ErrInvalidStoredKey = errors.New("stored key must decode to 32 bytes")
 
-	// ErrInvalidServerKey is raised when the ServerKey does not decode to
-	// the SHA-256 digest size
+	// ErrInvalidServerKey is returned when the ServerKey does not decode to
+	// the SHA-256 digest size.
 	ErrInvalidServerKey = errors.New("server key must decode to 32 bytes")
 )
 
@@ -75,7 +76,8 @@ type parsedHash struct {
 }
 
 // Verify checks if the passed SCRAM hash, in the format used by PostgreSQL,
-// corresponds to the given plain text.
+// corresponds to the given plain text. It returns true on a match, false on
+// mismatch, and a non-nil error only when hash is malformed.
 //
 // The iteration count parsed from the hash drives the PBKDF2 work performed
 // during verification. Callers that may receive attacker-influenced hashes
@@ -106,11 +108,10 @@ func Verify(hash string, plainText string) (bool, error) {
 	return subtle.ConstantTimeCompare([]byte(hash), []byte(computed)) == 1, nil
 }
 
-// parsePostgreSQLHash parses a PostgreSQL SCRAM hash into its
-// components
+// parsePostgreSQLHash splits a PostgreSQL SCRAM secret of the form
+// "SCRAM-SHA-256$<iter>:<salt>$<StoredKey>:<ServerKey>" into its components,
+// returning one of the Err* sentinels for any structural error.
 func parsePostgreSQLHash(hash string) (*parsedHash, error) {
-	// SCRAM-SHA-256$<iter>:<salt>$<StoredKey>:<ServerKey>
-
 	components := strings.Split(hash, "$")
 	if len(components) != 3 {
 		return nil, ErrWrongComponents

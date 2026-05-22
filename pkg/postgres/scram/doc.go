@@ -17,5 +17,11 @@ limitations under the License.
 SPDX-License-Identifier: Apache-2.0
 */
 
-// Package scram implements the SCRAM hash as used by PostgreSQL
+// Package scram generates and verifies SCRAM-SHA-256 password hashes in the
+// form PostgreSQL stores them in pg_authid.rolpassword, namely
+// "SCRAM-SHA-256$<iter>:<salt>$<StoredKey>:<ServerKey>".
+//
+// It is concerned with the on-disk representation of the secret only; it
+// does not implement the SCRAM SASL authentication exchange between client
+// and server.
 package scram
