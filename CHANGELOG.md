@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.1](https://github.com/cloudnative-pg/machinery/compare/v0.5.0...v0.5.1) (2026-06-25)
+
+
+### Bug Fixes
+
+* **deps:** update all non-major go dependencies ([#282](https://github.com/cloudnative-pg/machinery/issues/282)) ([083d7f5](https://github.com/cloudnative-pg/machinery/commit/083d7f593b55075543781fb140cc3e69f0c8c394))
+* **deps:** update all non-major go dependencies ([#287](https://github.com/cloudnative-pg/machinery/issues/287)) ([6a906af](https://github.com/cloudnative-pg/machinery/commit/6a906afebd37c9b40a038df3ad0e636509ac4a72))
+* **deps:** update all non-major go dependencies ([#288](https://github.com/cloudnative-pg/machinery/issues/288)) ([1d65413](https://github.com/cloudnative-pg/machinery/commit/1d65413c2713cbea09ab662eaaef592597afedd5))
+* **deps:** update all non-major go dependencies to v0.46.0 ([#276](https://github.com/cloudnative-pg/machinery/issues/276)) ([8d31f7d](https://github.com/cloudnative-pg/machinery/commit/8d31f7d5482a5647e611652d56c380c974721410))
+* **deps:** update all non-major go dependencies to v2.30.0 ([#280](https://github.com/cloudnative-pg/machinery/issues/280)) ([e208b7b](https://github.com/cloudnative-pg/machinery/commit/e208b7be10272bc03cc031488316783a03df8805))
+* **deps:** update kubernetes monorepo to v0.36.2 ([#281](https://github.com/cloudnative-pg/machinery/issues/281)) ([b28a5da](https://github.com/cloudnative-pg/machinery/commit/b28a5da7bd90870e2f16346bc8198f68008506ee))
+
 ## [0.5.0](https://github.com/cloudnative-pg/machinery/compare/v0.4.0...v0.5.0) (2026-05-22)
 
 
