@@ -27,8 +27,12 @@ type teeSink struct {
 }
 
 func (t *teeSink) Init(info logr.RuntimeInfo) {
-	t.primary.Init(info)
-	t.secondary.Init(info)
+	if t.primary != nil {
+		t.primary.Init(info)
+	}
+	if t.secondary != nil {
+		t.secondary.Init(info)
+	}
 }
 
 func (t *teeSink) Enabled(level int) bool {
