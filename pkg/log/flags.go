@@ -68,6 +68,9 @@ func (l *Flags) AddFlags(flags *pflag.FlagSet) {
 		"JSON log field to report severity in (default: level)")
 	loggingFlagSet.StringVar(&logfieldsRemap.TimeKey, "log-field-timestamp", "",
 		"JSON log field to report timestamp in (default: ts)")
+	loggingFlagSet.StringVar(&otelLogEndpoint, "log-otel-endpoint", "",
+		"OpenTelemetry Collector OTLP gRPC endpoint for log export (e.g. otel-collector:4317). "+
+			"Also configurable via CNPG_LOG_OTEL_ENDPOINT env var. Empty disables.")
 	l.zapOptions.BindFlags(loggingFlagSet)
 	flags.AddGoFlagSet(loggingFlagSet)
 }
@@ -104,6 +107,7 @@ func (l *Flags) ConfigureLogging() {
 	}
 
 	redirectStdLog(logger)
+	logger = setupOTelLogger(logger)
 	controllerruntime.SetLogger(logger)
 	klog.SetLogger(logger)
 	SetLogger(logger)
