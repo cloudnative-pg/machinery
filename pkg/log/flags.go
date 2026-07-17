@@ -74,6 +74,8 @@ func (l *Flags) AddFlags(flags *pflag.FlagSet) {
 		"the desired log level, one of error, info, debug and trace")
 	loggingFlagSet.StringVar(&logDestination, "log-destination", "",
 		"where the log stream will be written")
+	loggingFlagSet.BoolVar(&truncateDestination, "log-truncate-destination", false,
+		"truncate the log destination on open instead of appending to it (ignored for FIFOs)")
 	loggingFlagSet.StringVar(&logfieldsRemap.LevelKey, "log-field-level", "",
 		"JSON log field to report severity in (default: level)")
 	loggingFlagSet.StringVar(&logfieldsRemap.TimeKey, "log-field-timestamp", "",
