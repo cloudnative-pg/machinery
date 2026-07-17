@@ -24,9 +24,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
 var _ = Describe("customDestination", func() {
@@ -57,7 +58,7 @@ var _ = Describe("customDestination", func() {
 			Expect(closer.Close()).To(Succeed())
 		}
 
-		content, err := os.ReadFile(destPath)
+		content, err := os.ReadFile(destPath) //#nosec
 		Expect(err).NotTo(HaveOccurred())
 		Expect(string(content)).To(Equal("0123456789abc"))
 	})
@@ -78,7 +79,7 @@ var _ = Describe("customDestination", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(secondOpen.DestWriter.(io.Closer).Close()).To(Succeed())
 
-		content, err := os.ReadFile(destPath)
+		content, err := os.ReadFile(destPath) //#nosec
 		Expect(err).NotTo(HaveOccurred())
 		Expect(string(content)).To(Equal("first-run\nsecond\n"))
 	})
@@ -99,7 +100,7 @@ var _ = Describe("customDestination", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(options.DestWriter.(io.Closer).Close()).To(Succeed())
 
-		content, err := os.ReadFile(destPath)
+		content, err := os.ReadFile(destPath) //#nosec
 		Expect(err).NotTo(HaveOccurred())
 		Expect(string(content)).To(Equal("abc"))
 	})
