@@ -38,8 +38,9 @@ type Flags struct {
 }
 
 var (
-	logLevel       string
-	logDestination string
+	logLevel            string
+	logDestination      string
+	truncateDestination bool
 
 	logfieldsRemap struct {
 		TimeKey  string
@@ -55,6 +56,15 @@ func NewFlags(options zap.Options) Flags {
 // SetLogLevel sets manually the logLevel
 func SetLogLevel(level string) {
 	logLevel = level
+}
+
+// SetTruncateDestination controls whether the log destination, when it
+// is a regular file, is truncated on open instead of appended to.
+// This has no effect when the destination is a FIFO. Defaults to false
+// (append), which is the safe choice for accumulating logs across
+// repeated invocations against the same destination file.
+func SetTruncateDestination(truncate bool) {
+	truncateDestination = truncate
 }
 
 // AddFlags binds manager configuration flags to a given flagset
@@ -168,7 +178,12 @@ func customDestination(in *zap.Options) {
 		return
 	}
 
-	logStream, err := os.OpenFile(logDestination, os.O_RDWR|os.O_CREATE, 0o666) //#nosec
+	openFlags := os.O_RDWR | os.O_CREATE | os.O_APPEND
+	if truncateDestination {
+		openFlags = os.O_RDWR | os.O_CREATE | os.O_TRUNC
+	}
+
+	logStream, err := os.OpenFile(logDestination, openFlags, 0o666) //#nosec
 	if err != nil {
 		panic(fmt.Sprintf("Cannot open log destination %v: %v", logDestination, err))
 	}
