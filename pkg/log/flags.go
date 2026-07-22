@@ -60,9 +60,7 @@ func SetLogLevel(level string) {
 
 // SetTruncateDestination controls whether the log destination, when it
 // is a regular file, is truncated on open instead of appended to.
-// This has no effect when the destination is a FIFO. Defaults to false
-// (append), which is the safe choice for accumulating logs across
-// repeated invocations against the same destination file.
+// This has no effect when the destination is a FIFO.
 func SetTruncateDestination(truncate bool) {
 	truncateDestination = truncate
 }
