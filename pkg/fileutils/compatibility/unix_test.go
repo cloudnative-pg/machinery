@@ -58,8 +58,8 @@ var _ = Describe("CreateFifo", func() {
 
 		// attempt to create a FIFO where a regular file already exists
 		err := CreateFifo(filePath)
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("already exists and is not a FIFO"))
+		Expect(err).To(MatchError(ErrExistsNotFifo))
+		Expect(err.Error()).To(ContainSubstring(filePath))
 
 		// the pre-existing file must be left untouched
 		content, readErr := os.ReadFile(filePath) //#nosec

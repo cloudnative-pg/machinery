@@ -36,11 +36,15 @@ import (
 // it must already be a FIFO: any other type is reported as an error rather
 // than silently left in place.
 func CreateFifo(fileName string) error {
+	isFifo := func(fileMode os.FileMode) bool {
+		return fileMode&os.ModeNamedPipe != 0
+	}
+
 	info, err := os.Lstat(fileName)
 	switch {
 	case err == nil:
-		if info.Mode()&os.ModeNamedPipe == 0 {
-			return fmt.Errorf("%s already exists and is not a FIFO", fileName)
+		if !isFifo(info.Mode()) {
+			return fmt.Errorf("%q: %w", fileName, ErrExistsNotFifo)
 		}
 		return nil
 	case os.IsNotExist(err):
