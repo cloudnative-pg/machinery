@@ -23,6 +23,7 @@ SPDX-License-Identifier: Apache-2.0
 package compatibility
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"syscall"
@@ -30,12 +31,29 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// CreateFifo invokes the Unix system call Mkfifo, if the given filename exists
+// CreateFifo ensures a FIFO exists at fileName. If nothing exists there it
+// creates one. If an entry already exists it must resolve to a FIFO — the
+// check follows symlinks (os.Stat) so it matches how consumers open this
+// path (os.OpenFile follows symlinks); any other type is reported as an
+// error rather than silently left in place, and the existing entry is never
+// modified or removed.
 func CreateFifo(fileName string) error {
-	if _, err := os.Stat(fileName); err != nil {
-		return unix.Mkfifo(fileName, 0o600)
+	isFifo := func(fileMode os.FileMode) bool {
+		return fileMode&os.ModeNamedPipe != 0
 	}
-	return nil
+
+	info, err := os.Stat(fileName)
+	switch {
+	case err == nil:
+		if !isFifo(info.Mode()) {
+			return fmt.Errorf("%q: %w", fileName, ErrExistsNotFifo)
+		}
+		return nil
+	case os.IsNotExist(err):
+		return unix.Mkfifo(fileName, 0o600)
+	default:
+		return err
+	}
 }
 
 // AddInstanceRunCommands adds specific OS commands to the postgres exec.Cmd
