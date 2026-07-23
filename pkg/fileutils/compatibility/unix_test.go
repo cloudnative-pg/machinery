@@ -76,4 +76,19 @@ var _ = Describe("CreateFifo", func() {
 		Expect(err).To(HaveOccurred())
 		Expect(os.IsNotExist(err)).To(BeFalse())
 	})
+
+	It("rejects a symlink at the path even when it targets a FIFO, since Lstat does not follow it", func() {
+		dir := GinkgoT().TempDir()
+		realFifo := filepath.Join(dir, "real.fifo")
+		Expect(CreateFifo(realFifo)).To(Succeed())
+
+		// A symlink pointing at a genuine FIFO is not itself a FIFO: os.Lstat
+		// reports the link rather than following it (unlike the os.Stat the
+		// previous implementation used), so the path is reported as an error
+		// instead of being silently accepted.
+		linkPath := filepath.Join(dir, "link.fifo")
+		Expect(os.Symlink(realFifo, linkPath)).To(Succeed())
+
+		Expect(CreateFifo(linkPath)).To(MatchError(ErrExistsNotFifo))
+	})
 })
