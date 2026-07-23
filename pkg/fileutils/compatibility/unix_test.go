@@ -67,28 +67,44 @@ var _ = Describe("CreateFifo", func() {
 		Expect(string(content)).To(Equal("hello"))
 	})
 
-	It("propagates Lstat errors other than not-exist instead of attempting Mkfifo", func() {
+	It("propagates Stat errors other than not-exist instead of attempting Mkfifo", func() {
 		filePath := filepath.Join(GinkgoT().TempDir(), "notadir")
 		Expect(os.WriteFile(filePath, []byte("hello"), 0o600)).To(Succeed())
 
-		// attempt to create a FIFO in a non-directory, which will cause Lstat to fail with an error other than "not exist"
+		// attempt to create a FIFO in a non-directory, which will cause Stat to fail with an error other than "not exist"
 		err := CreateFifo(filepath.Join(filePath, "myfifo"))
 		Expect(err).To(HaveOccurred())
 		Expect(os.IsNotExist(err)).To(BeFalse())
 	})
 
-	It("rejects a symlink at the path even when it targets a FIFO, since Lstat does not follow it", func() {
+	It("accepts a symlink that resolves to a FIFO, since Stat follows it like the reader does", func() {
 		dir := GinkgoT().TempDir()
 		realFifo := filepath.Join(dir, "real.fifo")
 		Expect(CreateFifo(realFifo)).To(Succeed())
 
-		// A symlink pointing at a genuine FIFO is not itself a FIFO: os.Lstat
-		// reports the link rather than following it (unlike the os.Stat the
-		// previous implementation used), so the path is reported as an error
-		// instead of being silently accepted.
+		// A symlink pointing at a genuine FIFO resolves to a FIFO under
+		// os.Stat, matching how consumers of this path (os.OpenFile) open
+		// it: they follow the link too, so the check must agree with them.
 		linkPath := filepath.Join(dir, "link.fifo")
 		Expect(os.Symlink(realFifo, linkPath)).To(Succeed())
 
-		Expect(CreateFifo(linkPath)).To(MatchError(ErrExistsNotFifo))
+		Expect(CreateFifo(linkPath)).To(Succeed())
+	})
+
+	It("rejects a symlink that resolves to a regular file", func() {
+		dir := GinkgoT().TempDir()
+		target := filepath.Join(dir, "notafifo")
+		Expect(os.WriteFile(target, []byte("hello"), 0o600)).To(Succeed())
+
+		linkPath := filepath.Join(dir, "link")
+		Expect(os.Symlink(target, linkPath)).To(Succeed())
+
+		err := CreateFifo(linkPath)
+		Expect(err).To(MatchError(ErrExistsNotFifo))
+
+		// the pre-existing target must be left untouched
+		content, readErr := os.ReadFile(target) //#nosec
+		Expect(readErr).NotTo(HaveOccurred())
+		Expect(string(content)).To(Equal("hello"))
 	})
 })
