@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.6.0](https://github.com/cloudnative-pg/machinery/compare/v0.5.0...v0.6.0) (2026-07-23)
+
+
+### Features
+
+* **log:** make log file can be opened with truncated or appended ([#300](https://github.com/cloudnative-pg/machinery/issues/300)) ([b250f27](https://github.com/cloudnative-pg/machinery/commit/b250f272806f3498edd15aa87b5016261122518f))
+
+
+### Bug Fixes
+
+* **deps:** update all non-major go dependencies ([#282](https://github.com/cloudnative-pg/machinery/issues/282)) ([083d7f5](https://github.com/cloudnative-pg/machinery/commit/083d7f593b55075543781fb140cc3e69f0c8c394))
+* **deps:** update all non-major go dependencies ([#287](https://github.com/cloudnative-pg/machinery/issues/287)) ([6a906af](https://github.com/cloudnative-pg/machinery/commit/6a906afebd37c9b40a038df3ad0e636509ac4a72))
+* **deps:** update all non-major go dependencies ([#288](https://github.com/cloudnative-pg/machinery/issues/288)) ([1d65413](https://github.com/cloudnative-pg/machinery/commit/1d65413c2713cbea09ab662eaaef592597afedd5))
+* **deps:** update all non-major go dependencies to v0.46.0 ([#276](https://github.com/cloudnative-pg/machinery/issues/276)) ([8d31f7d](https://github.com/cloudnative-pg/machinery/commit/8d31f7d5482a5647e611652d56c380c974721410))
+* **deps:** update all non-major go dependencies to v2.30.0 ([#280](https://github.com/cloudnative-pg/machinery/issues/280)) ([e208b7b](https://github.com/cloudnative-pg/machinery/commit/e208b7be10272bc03cc031488316783a03df8805))
+* **deps:** update kubernetes monorepo to v0.36.2 ([#281](https://github.com/cloudnative-pg/machinery/issues/281)) ([b28a5da](https://github.com/cloudnative-pg/machinery/commit/b28a5da7bd90870e2f16346bc8198f68008506ee))
+* **deps:** update module github.com/go-logr/logr to v1.4.4 ([#303](https://github.com/cloudnative-pg/machinery/issues/303)) ([4d2bbac](https://github.com/cloudnative-pg/machinery/commit/4d2bbac3cf17872331f0c9ed1f9ea64cfa619731))
+* **deps:** update module golang.org/x/sys to v0.47.0 ([#295](https://github.com/cloudnative-pg/machinery/issues/295)) ([565b459](https://github.com/cloudnative-pg/machinery/commit/565b459e818407250126004ab583e294cc4a5764))
+* **deps:** update module k8s.io/apimachinery to v0.36.3 ([#304](https://github.com/cloudnative-pg/machinery/issues/304)) ([df640f3](https://github.com/cloudnative-pg/machinery/commit/df640f3d24ed4350a18ba2e441e296a0189834f0))
+* **fileutils:** fail createFifo when an existing path is not a FIFO ([#301](https://github.com/cloudnative-pg/machinery/issues/301)) ([0923808](https://github.com/cloudnative-pg/machinery/commit/0923808070d17a1dc8ef2b0969c4ed17f512e639))
+
 ## [0.5.0](https://github.com/cloudnative-pg/machinery/compare/v0.4.0...v0.5.0) (2026-05-22)
 
 
