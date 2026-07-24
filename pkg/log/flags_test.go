@@ -146,6 +146,10 @@ var _ = Describe("ConfigureLogging sampling behavior", func() {
 		dest = filepath.Join(GinkgoT().TempDir(), "log")
 	})
 
+	AfterEach(func() {
+		logDestination = ""
+	})
+
 	It("keeps the duplicate-message sampler by default", func() {
 		configureTestLogging(dest, nil)
 
