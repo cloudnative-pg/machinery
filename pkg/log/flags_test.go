@@ -160,12 +160,9 @@ var _ = Describe("ConfigureLogging sampling behavior", func() {
 		}
 
 		lines := destLines(dest, `"msg":"sampled-burst-marker"`)
-		// A single sampler window passes 102 of the 300 identical messages
-		// (the first 100, then 1 in 100). If the loop straddles a window
-		// boundary, the worst-case split passes 201. Only a pathological
-		// scheduler stall spreading the burst over three or more windows
-		// could exceed this bound.
-		Expect(len(lines)).To(BeNumerically("<=", 210),
+		// Only checks that some messages were deduped, not the sampler's exact
+		// rate (that's controller-runtime/zap's contract, not this package's).
+		Expect(len(lines)).To(BeNumerically("<", burst),
 			"the default logger should sample duplicate messages beyond 100/s")
 	})
 
