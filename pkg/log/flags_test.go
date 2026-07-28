@@ -113,18 +113,20 @@ var _ = Describe("customDestination", func() {
 // logging flags, parses them, and calls ConfigureLogging, sending the log
 // stream to dest so the specs can inspect it.
 func configureTestLogging(dest string, extraFlags []string, opts ...ConfigureOption) {
+	GinkgoHelper()
 	flags := &Flags{}
 	flagSet := &pflag.FlagSet{}
 	flags.AddFlags(flagSet)
 	args := append([]string{"--log-destination", dest}, extraFlags...)
-	ExpectWithOffset(1, flagSet.Parse(args)).To(Succeed())
+	Expect(flagSet.Parse(args)).To(Succeed())
 	flags.ConfigureLogging(opts...)
 }
 
-// destLines returns the lines of the log destination file containing marker
+// destLines returns the lines of the log destination file containing the marker
 func destLines(dest string, marker string) []string {
+	GinkgoHelper()
 	content, err := os.ReadFile(dest) //nolint:gosec
-	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+	Expect(err).ToNot(HaveOccurred())
 
 	var result []string
 	for _, line := range strings.Split(string(content), "\n") {
