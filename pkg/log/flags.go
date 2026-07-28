@@ -25,6 +25,7 @@ import (
 	"os"
 
 	"github.com/spf13/pflag"
+	uberzap "go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"k8s.io/klog/v2"
 	controllerruntime "sigs.k8s.io/controller-runtime"
@@ -93,15 +94,43 @@ func GetFieldsRemapFlags() (res []string) {
 	return res
 }
 
+// ConfigureOption customizes the behavior of ConfigureLogging
+type ConfigureOption func(*configureOptions)
+
+type configureOptions struct {
+	disableSampling bool
+}
+
+// WithDisabledSampling turns off the duplicate-message sampler that the
+// controller-runtime zap builder installs on production-mode loggers, which
+// passes only the first 100 messages sharing the same (level, message) pair
+// each second and roughly 1 in 100 afterwards. Use it for processes whose
+// output must be complete, such as the instance manager forwarding the
+// PostgreSQL log stream.
+func WithDisabledSampling() ConfigureOption {
+	return func(o *configureOptions) {
+		o.disableSampling = true
+	}
+}
+
 // ConfigureLogging configure the logging honoring the flags
 // passed from the user
 // This is executed after args were already parsed.
-func (l *Flags) ConfigureLogging() {
+func (l *Flags) ConfigureLogging(opts ...ConfigureOption) {
+	options := configureOptions{}
+	for _, opt := range opts {
+		opt(&options)
+	}
+
 	if l.zapOptions.TimeEncoder == nil {
 		l.zapOptions.TimeEncoder = zapcore.RFC3339NanoTimeEncoder
 	}
 
-	logger := zap.New(zap.UseFlagOptions(&l.zapOptions), customLevel, customDestination, remapKeys)
+	zapOpts := []zap.Opts{zap.UseFlagOptions(&l.zapOptions), customLevel, customDestination, remapKeys}
+	if options.disableSampling {
+		zapOpts = append(zapOpts, disableSampling)
+	}
+	logger := zap.New(zapOpts...)
 	switch logLevel {
 	case ErrorLevelString,
 		WarningLevelString,
@@ -162,6 +191,19 @@ func remapKeys(in *zap.Options) {
 			c.LevelKey = logfieldsRemap.LevelKey
 		}
 	})
+}
+
+// disableSampling prevents the controller-runtime zap builder from
+// installing its duplicate-message sampler. The builder adds the sampler
+// only when the configured level does not enable zapcore.Level(-2)
+// (see Options.addDefaults in sigs.k8s.io/controller-runtime/pkg/log/zap),
+// so this passes a fully-verbose level to make the builder skip it, and then
+// restores the level the user asked for by filtering the core. It must run
+// after customLevel, which sets in.Level from the --log-level flag.
+func disableSampling(in *zap.Options) {
+	realLevel := in.Level
+	in.Level = TraceLevel
+	in.ZapOpts = append(in.ZapOpts, uberzap.IncreaseLevel(realLevel))
 }
 
 func customLevel(in *zap.Options) {
