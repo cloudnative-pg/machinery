@@ -198,11 +198,11 @@ func WriteFileAtomic(fileName string, contents []byte, perm os.FileMode) (bool, 
 	}
 
 	var out *os.File
-	fileNameTmp := fmt.Sprintf("%s_%v", fileName, time.Now().Unix())
-	out, err = os.OpenFile(fileNameTmp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, perm) // #nosec
+	out, err = os.CreateTemp(filepath.Dir(fileName), filepath.Base(fileName)+"_*") // #nosec
 	if err != nil {
 		return false, err
 	}
+	fileNameTmp := out.Name()
 	defer func() {
 		closeError := out.Close()
 		if err == nil && closeError != nil {
@@ -212,6 +212,10 @@ func WriteFileAtomic(fileName string, contents []byte, perm os.FileMode) (bool, 
 			_ = os.Remove(fileNameTmp)
 		}
 	}()
+
+	if err = os.Chmod(fileNameTmp, perm); err != nil {
+		return false, err
+	}
 
 	_, err = out.Write(contents)
 	if err != nil {
