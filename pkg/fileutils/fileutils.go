@@ -198,7 +198,7 @@ func WriteFileAtomic(fileName string, contents []byte, perm os.FileMode) (bool, 
 	}
 
 	var out *os.File
-	out, err = os.CreateTemp(filepath.Dir(fileName), filepath.Base(fileName)+"_*") // #nosec
+	out, err = os.CreateTemp(filepath.Dir(fileName), filepath.Base(fileName)+"_*")
 	if err != nil {
 		return false, err
 	}

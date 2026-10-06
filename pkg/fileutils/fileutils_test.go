@@ -27,6 +27,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -60,6 +61,38 @@ var _ = Describe("File writing functions", func() {
 		changed, err := WriteStringToFile(path.Join(tempDir1, "test", "test3.txt"), "this is a test")
 		Expect(changed).To(BeTrue())
 		Expect(err).ToNot(HaveOccurred())
+	})
+})
+
+var _ = Describe("WriteFileAtomic", func() {
+	It("handles concurrent writes to the same file without leaving temporary files", func() {
+		dir := GinkgoT().TempDir()
+		target := filepath.Join(dir, "target.conf")
+
+		var wg sync.WaitGroup
+		errs := make(chan error, 50)
+		for i := 0; i < 50; i++ {
+			wg.Add(1)
+			go func() {
+				defer GinkgoRecover()
+				defer wg.Done()
+				_, err := WriteFileAtomic(target, []byte(fmt.Sprintf("value-%d", i)), 0o600)
+				errs <- err
+			}()
+		}
+		wg.Wait()
+		close(errs)
+		for err := range errs {
+			Expect(err).ToNot(HaveOccurred())
+		}
+
+		entries, err := os.ReadDir(dir)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(entries).To(HaveLen(1))
+
+		info, err := os.Stat(target)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(info.Mode().Perm()).To(Equal(os.FileMode(0o600)))
 	})
 })
 
