@@ -65,6 +65,22 @@ var _ = Describe("File writing functions", func() {
 })
 
 var _ = Describe("WriteFileAtomic", func() {
+	It("applies the process umask to the requested permissions", func() {
+		dir := GinkgoT().TempDir()
+
+		reference, err := os.OpenFile(filepath.Join(dir, "reference"), os.O_WRONLY|os.O_CREATE, 0o666) // #nosec
+		Expect(err).ToNot(HaveOccurred())
+		Expect(reference.Close()).To(Succeed())
+		referenceInfo, err := os.Stat(filepath.Join(dir, "reference"))
+		Expect(err).ToNot(HaveOccurred())
+
+		_, err = WriteFileAtomic(filepath.Join(dir, "target"), []byte("content"), 0o666)
+		Expect(err).ToNot(HaveOccurred())
+		info, err := os.Stat(filepath.Join(dir, "target"))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(info.Mode().Perm()).To(Equal(referenceInfo.Mode().Perm()))
+	})
+
 	It("handles concurrent writes to the same file without leaving temporary files", func() {
 		dir := GinkgoT().TempDir()
 		target := filepath.Join(dir, "target.conf")
