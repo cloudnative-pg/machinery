@@ -213,7 +213,7 @@ func WriteFileAtomic(fileName string, contents []byte, perm os.FileMode) (bool, 
 		}
 	}()
 
-	if err = os.Chmod(fileNameTmp, perm); err != nil {
+	if err = out.Chmod(perm); err != nil {
 		return false, err
 	}
 

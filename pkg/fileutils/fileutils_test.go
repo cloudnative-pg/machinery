@@ -74,7 +74,6 @@ var _ = Describe("WriteFileAtomic", func() {
 		for i := 0; i < 50; i++ {
 			wg.Add(1)
 			go func() {
-				defer GinkgoRecover()
 				defer wg.Done()
 				_, err := WriteFileAtomic(target, []byte(fmt.Sprintf("value-%d", i)), 0o600)
 				errs <- err
@@ -89,6 +88,10 @@ var _ = Describe("WriteFileAtomic", func() {
 		entries, err := os.ReadDir(dir)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(entries).To(HaveLen(1))
+
+		content, err := os.ReadFile(target) // #nosec
+		Expect(err).ToNot(HaveOccurred())
+		Expect(string(content)).To(MatchRegexp(`^value-\d+$`))
 
 		info, err := os.Stat(target)
 		Expect(err).ToNot(HaveOccurred())
