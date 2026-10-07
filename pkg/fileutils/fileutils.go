@@ -25,6 +25,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"io"
@@ -32,6 +33,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/cloudnative-pg/machinery/pkg/log"
@@ -197,9 +199,11 @@ func WriteFileAtomic(fileName string, contents []byte, perm os.FileMode) (bool, 
 		return false, err
 	}
 
+	// A random suffix with O_EXCL keeps concurrent writers from sharing
+	// the temporary file, while os.OpenFile still applies the umask to perm
+	fileNameTmp := fileName + "_" + rand.Text()
 	var out *os.File
-	fileNameTmp := fmt.Sprintf("%s_%v", fileName, time.Now().Unix())
-	out, err = os.OpenFile(fileNameTmp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, perm) // #nosec
+	out, err = os.OpenFile(fileNameTmp, os.O_WRONLY|os.O_CREATE|os.O_EXCL, perm) // #nosec
 	if err != nil {
 		return false, err
 	}
@@ -222,9 +226,24 @@ func WriteFileAtomic(fileName string, contents []byte, perm os.FileMode) (bool, 
 	if err != nil {
 		return false, err
 	}
-	err = os.Rename(fileNameTmp, fileName)
+	if err = os.Rename(fileNameTmp, fileName); err != nil {
+		return false, err
+	}
 
-	return err == nil, err
+	// Make the rename itself durable
+	dir, err := os.Open(filepath.Dir(fileName))
+	if err != nil {
+		return true, err
+	}
+	defer func() {
+		_ = dir.Close()
+	}()
+	// Like PostgreSQL, tolerate filesystems that can't fsync directories
+	if err = dir.Sync(); err != nil && !errors.Is(err, syscall.EINVAL) {
+		return true, err
+	}
+
+	return true, nil
 }
 
 // ReadFile reads source file and output the content as bytes.

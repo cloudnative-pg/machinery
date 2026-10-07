@@ -27,6 +27,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -60,6 +61,57 @@ var _ = Describe("File writing functions", func() {
 		changed, err := WriteStringToFile(path.Join(tempDir1, "test", "test3.txt"), "this is a test")
 		Expect(changed).To(BeTrue())
 		Expect(err).ToNot(HaveOccurred())
+	})
+})
+
+var _ = Describe("WriteFileAtomic", func() {
+	It("applies the process umask to the requested permissions", func() {
+		dir := GinkgoT().TempDir()
+
+		reference, err := os.OpenFile(filepath.Join(dir, "reference"), os.O_WRONLY|os.O_CREATE, 0o666) // #nosec
+		Expect(err).ToNot(HaveOccurred())
+		Expect(reference.Close()).To(Succeed())
+		referenceInfo, err := os.Stat(filepath.Join(dir, "reference"))
+		Expect(err).ToNot(HaveOccurred())
+
+		_, err = WriteFileAtomic(filepath.Join(dir, "target"), []byte("content"), 0o666)
+		Expect(err).ToNot(HaveOccurred())
+		info, err := os.Stat(filepath.Join(dir, "target"))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(info.Mode().Perm()).To(Equal(referenceInfo.Mode().Perm()))
+	})
+
+	It("handles concurrent writes to the same file without leaving temporary files", func() {
+		dir := GinkgoT().TempDir()
+		target := filepath.Join(dir, "target.conf")
+
+		var wg sync.WaitGroup
+		errs := make(chan error, 50)
+		for i := 0; i < 50; i++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				_, err := WriteFileAtomic(target, []byte(fmt.Sprintf("value-%d", i)), 0o600)
+				errs <- err
+			}()
+		}
+		wg.Wait()
+		close(errs)
+		for err := range errs {
+			Expect(err).ToNot(HaveOccurred())
+		}
+
+		entries, err := os.ReadDir(dir)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(entries).To(HaveLen(1))
+
+		content, err := os.ReadFile(target) // #nosec
+		Expect(err).ToNot(HaveOccurred())
+		Expect(string(content)).To(MatchRegexp(`^value-\d+$`))
+
+		info, err := os.Stat(target)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(info.Mode().Perm()).To(Equal(os.FileMode(0o600)))
 	})
 })
 
