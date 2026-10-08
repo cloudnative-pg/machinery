@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.6.1](https://github.com/cloudnative-pg/machinery/compare/v0.6.0...v0.6.1) (2026-10-08)
+
+
+### Bug Fixes
+
+* **deps:** update all non-major go dependencies ([#319](https://github.com/cloudnative-pg/machinery/issues/319)) ([0bb9a05](https://github.com/cloudnative-pg/machinery/commit/0bb9a0534ab58c4a7d2d4173516350da9fc4d1e1))
+* **deps:** update module k8s.io/apimachinery to v0.37.1 ([#322](https://github.com/cloudnative-pg/machinery/issues/322)) ([eec9338](https://github.com/cloudnative-pg/machinery/commit/eec9338176108859fc31fe18b4fc9dde3aa082a6))
+* **deps:** update module sigs.k8s.io/controller-runtime to v0.25.2 ([#318](https://github.com/cloudnative-pg/machinery/issues/318)) ([ef21570](https://github.com/cloudnative-pg/machinery/commit/ef215707327bc99050407796c94d365dd0906a88))
+* **fileutils:** avoid temp filename collisions in WriteFileAtomic ([#325](https://github.com/cloudnative-pg/machinery/issues/325)) ([a1d6032](https://github.com/cloudnative-pg/machinery/commit/a1d6032e50c2cc9be1dc457e5825f2f66500ad0f))
+
 ## [0.6.0](https://github.com/cloudnative-pg/machinery/compare/v0.5.0...v0.6.0) (2026-08-28)
 
 
