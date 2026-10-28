@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/go-logr/logr"
 	"github.com/spf13/pflag"
 	uberzap "go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -133,7 +132,7 @@ func (l *Flags) ConfigureLogging(opts ...ConfigureOption) {
 		zapOpts = append(zapOpts, disableSampling)
 	}
 	var openTelemetryErr error
-	openTelemetryProvider, openTelemetryLogger = nil, logr.Discard()
+	openTelemetryProvider, openTelemetryForwarder = nil, nil
 	if options.openTelemetry && isOpenTelemetryConfigured() {
 		var openTelemetry zap.Opts
 		if openTelemetry, openTelemetryErr = setupOpenTelemetry(getLogLevel(logLevel)); openTelemetryErr == nil {
