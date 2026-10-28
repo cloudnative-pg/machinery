@@ -20,13 +20,15 @@ SPDX-License-Identifier: Apache-2.0
 package log
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
+	"slices"
+	"time"
 
-	"github.com/go-logr/logr"
-	"github.com/go-logr/zapr"
 	"go.opentelemetry.io/contrib/bridges/otelzap"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
@@ -45,8 +47,9 @@ var (
 	// nil when the OpenTelemetry export is disabled
 	openTelemetryProvider *sdklog.LoggerProvider
 
-	// openTelemetryLogger writes only to the OpenTelemetry export
-	openTelemetryLogger = logr.Discard()
+	// openTelemetryForwarder writes only to the OpenTelemetry export, nil
+	// when the OpenTelemetry export is disabled
+	openTelemetryForwarder zapcore.Core
 )
 
 // WithOpenTelemetry also exports the log records to an OpenTelemetry
@@ -76,12 +79,71 @@ func ShutdownOpenTelemetry(ctx context.Context) error {
 	return openTelemetryProvider.Shutdown(ctx)
 }
 
-// OpenTelemetryLogger returns a logger writing only to the OpenTelemetry
-// export, for records that are already written on the log destination,
-// such as the ones another process wrote there. It discards everything
-// when the OpenTelemetry export is disabled.
-func OpenTelemetryLogger() logr.Logger {
-	return openTelemetryLogger
+// ForwardToOpenTelemetry exports, without writing it on the log
+// destination, a record that another process wrote in JSON with the
+// default keys of the encoder, such as a process spawned by this one whose
+// output is already written there. The record keeps its time, level,
+// logger name and fields, while a line that is not a JSON object is
+// exported as an info message. It is a no-op when the OpenTelemetry export
+// is disabled.
+func ForwardToOpenTelemetry(line []byte) {
+	if openTelemetryForwarder == nil {
+		return
+	}
+
+	ent, fields := parseJSONRecord(line)
+	if ce := openTelemetryForwarder.Check(ent, nil); ce != nil {
+		ce.Write(fields...)
+	}
+}
+
+// parseJSONRecord decodes a record written by the JSON encoder with its
+// default keys, mapping the error to the attribute of the semantic
+// conventions, as the OpenTelemetry bridge does for the records of this
+// process
+func parseJSONRecord(line []byte) (zapcore.Entry, []zapcore.Field) {
+	ent := zapcore.Entry{Time: time.Now(), Level: InfoLevel}
+
+	var record map[string]any
+	decoder := json.NewDecoder(bytes.NewReader(line))
+	decoder.UseNumber()
+	if err := decoder.Decode(&record); err != nil {
+		ent.Message = string(line)
+		return ent, nil
+	}
+
+	if ts, ok := record["ts"].(string); ok {
+		if parsed, err := time.Parse(time.RFC3339Nano, ts); err == nil {
+			ent.Time = parsed
+		}
+	}
+	level, _ := record["level"].(string)
+	ent.Level = getLogLevel(level)
+	ent.LoggerName, _ = record["logger"].(string)
+	ent.Message, _ = record["msg"].(string)
+	ent.Stack, _ = record["stacktrace"].(string)
+	for _, key := range []string{"ts", "level", "logger", "msg", "stacktrace"} {
+		delete(record, key)
+	}
+	if err, ok := record["error"]; ok {
+		delete(record, "error")
+		record["exception.message"] = err
+	}
+
+	fields := make([]zapcore.Field, 0, len(record))
+	for _, key := range slices.Sorted(maps.Keys(record)) {
+		value := record[key]
+		if number, ok := value.(json.Number); ok {
+			if integer, err := number.Int64(); err == nil {
+				value = integer
+			} else {
+				value, _ = number.Float64()
+			}
+		}
+		fields = append(fields, uberzap.Any(key, value))
+	}
+
+	return ent, fields
 }
 
 func isOpenTelemetryConfigured() bool {
@@ -104,7 +166,7 @@ func setupOpenTelemetry(level zapcore.Level) (zap.Opts, error) {
 		LevelEnabler: level,
 		core:         otelzap.NewCore(openTelemetryScope, otelzap.WithLoggerProvider(openTelemetryProvider)),
 	}
-	openTelemetryLogger = zapr.NewLogger(uberzap.New(core))
+	openTelemetryForwarder = core
 
 	return func(in *zap.Options) {
 		in.ZapOpts = append(in.ZapOpts, uberzap.WrapCore(func(c zapcore.Core) zapcore.Core {
