@@ -99,6 +99,7 @@ type ConfigureOption func(*configureOptions)
 
 type configureOptions struct {
 	disableSampling bool
+	openTelemetry   bool
 }
 
 // WithDisabledSampling turns off the duplicate-message sampler that the
@@ -130,6 +131,14 @@ func (l *Flags) ConfigureLogging(opts ...ConfigureOption) {
 	if options.disableSampling {
 		zapOpts = append(zapOpts, disableSampling)
 	}
+	var openTelemetryErr error
+	openTelemetryProvider, openTelemetryForwarder = nil, nil
+	if options.openTelemetry && isOpenTelemetryConfigured() {
+		var openTelemetry zap.Opts
+		if openTelemetry, openTelemetryErr = setupOpenTelemetry(getLogLevel(logLevel)); openTelemetryErr == nil {
+			zapOpts = append(zapOpts, openTelemetry)
+		}
+	}
 	logger := zap.New(zapOpts...)
 	switch logLevel {
 	case ErrorLevelString,
@@ -140,6 +149,9 @@ func (l *Flags) ConfigureLogging(opts ...ConfigureOption) {
 		break
 	default:
 		logger.Info("Invalid log level, defaulting", "level", logLevel, "default", DefaultLevel)
+	}
+	if openTelemetryErr != nil {
+		logger.Error(openTelemetryErr, "Cannot export the logs via OpenTelemetry")
 	}
 
 	redirectStdLog(logger)
