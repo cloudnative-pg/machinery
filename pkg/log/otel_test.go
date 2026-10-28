@@ -46,6 +46,7 @@ import (
 // exportedRecord is a log record received by the OTLP test receiver
 type exportedRecord struct {
 	scope      string
+	time       time.Time
 	severity   logspb.SeverityNumber
 	body       string
 	attributes map[string]*commonpb.AnyValue
@@ -77,6 +78,7 @@ func (r *otlpReceiver) Export(
 				}
 				r.records = append(r.records, exportedRecord{
 					scope:      scopeLogs.GetScope().GetName(),
+					time:       time.Unix(0, int64(record.GetTimeUnixNano())), //nolint:gosec
 					severity:   record.GetSeverityNumber(),
 					body:       record.GetBody().GetStringValue(),
 					attributes: attributes,
@@ -310,18 +312,40 @@ var _ = Describe("ConfigureLogging with the OpenTelemetry export", func() {
 		Expect(receiver.withBody("sampled-burst-marker")).To(HaveLen(len(written)))
 	})
 
-	It("writes the records of OpenTelemetryLogger only to the export", func() {
+	It("forwards the records of another process only to the export, as that process wrote them", func() {
 		receiver := startHTTPReceiver()
 		configureTestLogging(dest, nil, WithDisabledSampling(), WithOpenTelemetry())
 
-		OpenTelemetryLogger().WithName("wal-archive").Info("export-only-marker", "walName", "000000010000000000000001")
+		ForwardToOpenTelemetry([]byte(`{"level":"error","ts":"2026-10-28T10:00:00.123456789Z",` +
+			`"logger":"wal-archive","msg":"forwarded-marker","error":"exit status 4","exitCode":4,` +
+			`"elapsedWalTime":0.5,"options":{"compression":"gzip"},"stacktrace":"main.main\n\t/main.go:1"}`))
+		ForwardToOpenTelemetry([]byte(`{"level":"debug","msg":"forwarded-debug-marker"}`))
+		ForwardToOpenTelemetry([]byte(`not-json-marker`))
 		shutdownOpenTelemetry()
 
-		records := receiver.withBody("export-only-marker")
+		records := receiver.withBody("forwarded-marker")
 		Expect(records).To(HaveLen(1))
 		Expect(records[0].scope).To(Equal("wal-archive"))
-		Expect(records[0].attributes["walName"].GetStringValue()).To(Equal("000000010000000000000001"))
-		Expect(destLines(dest, "export-only-marker")).To(BeEmpty())
+		Expect(records[0].time).To(BeTemporally("==", time.Date(2026, 10, 28, 10, 0, 0, 123456789, time.UTC)))
+		Expect(records[0].severity).To(Equal(logspb.SeverityNumber_SEVERITY_NUMBER_ERROR))
+		Expect(records[0].attributes["exception.message"].GetStringValue()).To(Equal("exit status 4"))
+		Expect(records[0].attributes["exception.stacktrace"].GetStringValue()).To(Equal("main.main\n\t/main.go:1"))
+		Expect(records[0].attributes["exitCode"].GetIntValue()).To(BeEquivalentTo(4))
+		Expect(records[0].attributes["elapsedWalTime"].GetDoubleValue()).To(Equal(0.5))
+		options := records[0].attributes["options"].GetKvlistValue().GetValues()
+		Expect(options).To(HaveLen(1))
+		Expect(options[0].GetKey()).To(Equal("compression"))
+		Expect(options[0].GetValue().GetStringValue()).To(Equal("gzip"))
+		Expect(records[0].attributes).ToNot(HaveKey("error"))
+		Expect(records[0].attributes).ToNot(HaveKey("stacktrace"))
+
+		Expect(receiver.withBody("forwarded-debug-marker")).To(BeEmpty(),
+			"records below the configured log level must not be exported")
+		unparsed := receiver.withBody("not-json-marker")
+		Expect(unparsed).To(HaveLen(1))
+		Expect(unparsed[0].severity).To(Equal(logspb.SeverityNumber_SEVERITY_NUMBER_INFO))
+
+		Expect(destLines(dest, "marker")).To(BeEmpty())
 	})
 
 	It("stops the export at the first shutdown, so that a stuck collector delays the exit only once", func() {
@@ -354,7 +378,7 @@ var _ = Describe("ConfigureLogging with the OpenTelemetry export", func() {
 		shutdownOpenTelemetry()
 
 		Expect(receiver.withBody("not-exported-marker")).To(BeEmpty())
-		Expect(OpenTelemetryLogger().Enabled()).To(BeFalse())
+		Expect(openTelemetryForwarder).To(BeNil())
 		Expect(destLines(dest, "not-exported-marker")).To(HaveLen(1))
 	})
 
@@ -367,7 +391,7 @@ var _ = Describe("ConfigureLogging with the OpenTelemetry export", func() {
 		shutdownOpenTelemetry()
 
 		Expect(receiver.withBody("unsupported-protocol-marker")).To(BeEmpty())
-		Expect(OpenTelemetryLogger().Enabled()).To(BeFalse())
+		Expect(openTelemetryForwarder).To(BeNil())
 		Expect(destLines(dest, "unsupported-protocol-marker")).To(HaveLen(1))
 	})
 })
