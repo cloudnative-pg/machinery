@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.6.2](https://github.com/cloudnative-pg/machinery/compare/v0.6.1...v0.6.2) (2026-10-29)
+
+
+### Bug Fixes
+
+* **deps:** update all non-major go dependencies ([#332](https://github.com/cloudnative-pg/machinery/issues/332)) ([83a2746](https://github.com/cloudnative-pg/machinery/commit/83a2746cb44a4700718e2731f3729ce5acebfe63))
+* **deps:** update module k8s.io/apimachinery to v0.37.2 ([f8bfbf6](https://github.com/cloudnative-pg/machinery/commit/f8bfbf6c5775dfbbcd1b642548e560d4afcb06ea))
+
 ## [0.6.1](https://github.com/cloudnative-pg/machinery/compare/v0.6.0...v0.6.1) (2026-10-08)
 
 
