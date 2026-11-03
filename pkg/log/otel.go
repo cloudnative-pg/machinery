@@ -32,6 +32,7 @@ import (
 	"go.opentelemetry.io/contrib/bridges/otelzap"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
+	otellog "go.opentelemetry.io/otel/log"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	uberzap "go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -67,10 +68,24 @@ func WithOpenTelemetry() ConfigureOption {
 	}
 }
 
+// WithOpenTelemetryLoggerProvider also exports the log records through the
+// given provider, whatever the environment, for a process that configures
+// OpenTelemetry for its other signals and wants the log records to share
+// their resource and exporter selection. The records are exported at the
+// configured log level. The caller owns the provider and shuts it down
+// before the process exits, as ShutdownOpenTelemetry ignores it. This
+// option takes precedence over WithOpenTelemetry.
+func WithOpenTelemetryLoggerProvider(provider otellog.LoggerProvider) ConfigureOption {
+	return func(o *configureOptions) {
+		o.openTelemetryLoggerProvider = provider
+	}
+}
+
 // ShutdownOpenTelemetry exports the log records that are still queued and
 // stops the OpenTelemetry export, whose later records are only written to
 // the log destination. It is a no-op when the export is disabled or already
-// stopped.
+// stopped, or when the provider was passed with
+// WithOpenTelemetryLoggerProvider.
 func ShutdownOpenTelemetry(ctx context.Context) error {
 	if openTelemetryProvider == nil {
 		return nil
@@ -162,9 +177,16 @@ func setupOpenTelemetry(level zapcore.Level) (zap.Opts, error) {
 	openTelemetryProvider = sdklog.NewLoggerProvider(
 		sdklog.WithProcessor(sdklog.NewBatchProcessor(exporter)),
 	)
+
+	return teeToOpenTelemetry(openTelemetryProvider, level), nil
+}
+
+// teeToOpenTelemetry returns the zap option that tees the records to the
+// given provider
+func teeToOpenTelemetry(provider otellog.LoggerProvider, level zapcore.Level) zap.Opts {
 	core := &openTelemetryCore{
 		LevelEnabler: level,
-		core:         otelzap.NewCore(openTelemetryScope, otelzap.WithLoggerProvider(openTelemetryProvider)),
+		core:         otelzap.NewCore(openTelemetryScope, otelzap.WithLoggerProvider(provider)),
 	}
 	openTelemetryForwarder = core
 
@@ -175,7 +197,7 @@ func setupOpenTelemetry(level zapcore.Level) (zap.Opts, error) {
 			// which is what this core then exports
 			return zapcore.NewTee(c, core)
 		}))
-	}, nil
+	}
 }
 
 func newOpenTelemetryExporter() (sdklog.Exporter, error) {

@@ -29,9 +29,11 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"slices"
 	"sync"
 	"time"
 
+	sdklog "go.opentelemetry.io/otel/sdk/log"
 	collogspb "go.opentelemetry.io/proto/otlp/collector/logs/v1"
 	commonpb "go.opentelemetry.io/proto/otlp/common/v1"
 	logspb "go.opentelemetry.io/proto/otlp/logs/v1"
@@ -149,6 +151,36 @@ func startGRPCReceiver() *otlpReceiver {
 	GinkgoT().Setenv("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc")
 	GinkgoT().Setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://"+listener.Addr().String())
 	return receiver
+}
+
+// memoryExporter collects the log records exported to it by an SDK provider
+type memoryExporter struct {
+	mu      sync.Mutex
+	records []exportedRecord
+}
+
+func (e *memoryExporter) Export(_ context.Context, records []sdklog.Record) error {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	for _, record := range records {
+		e.records = append(e.records, exportedRecord{
+			scope: record.InstrumentationScope().Name,
+			body:  record.Body().AsString(),
+		})
+	}
+	return nil
+}
+
+func (*memoryExporter) Shutdown(context.Context) error { return nil }
+
+func (*memoryExporter) ForceFlush(context.Context) error { return nil }
+
+func (e *memoryExporter) exported() []exportedRecord {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	return slices.Clone(e.records)
 }
 
 func shutdownOpenTelemetry() {
@@ -368,6 +400,30 @@ var _ = Describe("ConfigureLogging with the OpenTelemetry export", func() {
 		Expect(ShutdownOpenTelemetry(context.Background())).To(Succeed())
 		Expect(time.Since(start)).To(BeNumerically("<", 100*time.Millisecond))
 		Expect(destLines(dest, "after-shutdown-marker")).To(HaveLen(1))
+	})
+
+	It("exports the records through the provider of the caller, which ShutdownOpenTelemetry leaves running", func() {
+		receiver := startHTTPReceiver()
+		exporter := &memoryExporter{}
+		provider := sdklog.NewLoggerProvider(sdklog.WithProcessor(sdklog.NewSimpleProcessor(exporter)))
+		DeferCleanup(provider.Shutdown, context.Background())
+		configureTestLogging(dest, nil,
+			WithDisabledSampling(), WithOpenTelemetry(), WithOpenTelemetryLoggerProvider(provider))
+
+		WithName("caller").Info("caller-marker")
+		Debug("caller-debug-marker")
+		ForwardToOpenTelemetry([]byte(`{"level":"info","logger":"child","msg":"caller-forwarded-marker"}`))
+		shutdownOpenTelemetry()
+		Info("caller-after-shutdown-marker")
+
+		Expect(exporter.exported()).To(Equal([]exportedRecord{
+			{scope: "caller", body: "caller-marker"},
+			{scope: "child", body: "caller-forwarded-marker"},
+			{scope: openTelemetryScope, body: "caller-after-shutdown-marker"},
+		}), "records below the configured log level must not be exported")
+		Expect(receiver.withBody("caller-marker")).To(BeEmpty(),
+			"the provider of the caller takes precedence over the one of WithOpenTelemetry")
+		Expect(destLines(dest, "caller-marker")).To(HaveLen(1))
 	})
 
 	It("does not export anything without the option, even with an endpoint", func() {
