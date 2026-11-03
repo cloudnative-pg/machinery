@@ -30,6 +30,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"sync"
 	"time"
 
@@ -202,6 +203,16 @@ var _ = Describe("ConfigureLogging with the OpenTelemetry export", func() {
 	BeforeEach(func() {
 		dest = filepath.Join(GinkgoT().TempDir(), "log")
 		GinkgoT().Setenv("POD_NAME", "cluster-example-1")
+
+		// The exporter would take a signal-specific variable inherited from
+		// the environment, such as the ones dagger sets, over the endpoint of
+		// the test receiver
+		for _, env := range os.Environ() {
+			if key, _, _ := strings.Cut(env, "="); strings.HasPrefix(key, "OTEL_") {
+				GinkgoT().Setenv(key, "")
+				Expect(os.Unsetenv(key)).To(Succeed())
+			}
+		}
 	})
 
 	AfterEach(func() {
