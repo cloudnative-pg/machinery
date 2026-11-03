@@ -25,6 +25,7 @@ import (
 	"os"
 
 	"github.com/spf13/pflag"
+	otellog "go.opentelemetry.io/otel/log"
 	uberzap "go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"k8s.io/klog/v2"
@@ -98,8 +99,9 @@ func GetFieldsRemapFlags() (res []string) {
 type ConfigureOption func(*configureOptions)
 
 type configureOptions struct {
-	disableSampling bool
-	openTelemetry   bool
+	disableSampling             bool
+	openTelemetry               bool
+	openTelemetryLoggerProvider otellog.LoggerProvider
 }
 
 // WithDisabledSampling turns off the duplicate-message sampler that the
@@ -133,7 +135,10 @@ func (l *Flags) ConfigureLogging(opts ...ConfigureOption) {
 	}
 	var openTelemetryErr error
 	openTelemetryProvider, openTelemetryForwarder = nil, nil
-	if options.openTelemetry && isOpenTelemetryConfigured() {
+	switch {
+	case options.openTelemetryLoggerProvider != nil:
+		zapOpts = append(zapOpts, teeToOpenTelemetry(options.openTelemetryLoggerProvider, getLogLevel(logLevel)))
+	case options.openTelemetry && isOpenTelemetryConfigured():
 		var openTelemetry zap.Opts
 		if openTelemetry, openTelemetryErr = setupOpenTelemetry(getLogLevel(logLevel)); openTelemetryErr == nil {
 			zapOpts = append(zapOpts, openTelemetry)
