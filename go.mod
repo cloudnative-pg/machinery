@@ -12,7 +12,7 @@ require (
 	github.com/onsi/gomega v1.44.0
 	github.com/spf13/pflag v1.0.10
 	github.com/thoas/go-funk v0.9.3
-	github.com/xdg-go/scram v1.2.0
+	github.com/xdg-go/scram v1.3.0
 	go.uber.org/zap v1.28.0
 	golang.org/x/sys v0.49.0
 	k8s.io/apimachinery v0.37.2
