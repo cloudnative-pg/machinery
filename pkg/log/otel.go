@@ -26,6 +26,7 @@ import (
 	"maps"
 	"os"
 	"slices"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/contrib/bridges/otelzap"
@@ -55,9 +56,10 @@ var (
 
 // WithOpenTelemetry also exports the log records to an OpenTelemetry
 // collector via OTLP, when the OTEL_EXPORTER_OTLP_ENDPOINT or the
-// OTEL_EXPORTER_OTLP_LOGS_ENDPOINT environment variable is set. The
-// exporter is configured with the standard OTEL_EXPORTER_OTLP_* variables,
-// and OTEL_EXPORTER_OTLP_LOGS_PROTOCOL or OTEL_EXPORTER_OTLP_PROTOCOL
+// OTEL_EXPORTER_OTLP_LOGS_ENDPOINT environment variable is set, unless
+// OTEL_LOGS_EXPORTER is "none" or OTEL_SDK_DISABLED is "true". The exporter
+// is configured with the standard OTEL_EXPORTER_OTLP_* variables, and
+// OTEL_EXPORTER_OTLP_LOGS_PROTOCOL or OTEL_EXPORTER_OTLP_PROTOCOL
 // selects between "http/protobuf", the default, and "grpc". The records
 // are exported at the configured log level, in the background: when the
 // collector cannot keep up, they are dropped instead of blocking the
@@ -152,6 +154,14 @@ func parseJSONRecord(line []byte) (zapcore.Entry, []zapcore.Field) {
 }
 
 func isOpenTelemetryConfigured() bool {
+	// OTEL_SDK_DISABLED turns off every signal, while "none" is the standard
+	// way to turn off the export of the logs only, even when the endpoint is
+	// set for the other signals
+	if strings.EqualFold(os.Getenv("OTEL_SDK_DISABLED"), "true") ||
+		strings.EqualFold(os.Getenv("OTEL_LOGS_EXPORTER"), "none") {
+		return false
+	}
+
 	return os.Getenv("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT") != "" ||
 		os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") != ""
 }

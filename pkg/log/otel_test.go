@@ -443,6 +443,34 @@ var _ = Describe("ConfigureLogging with the OpenTelemetry export", func() {
 		Expect(attributes["ratio"].GetDoubleValue()).To(Equal(0.5))
 	})
 
+	for _, value := range []string{"none", "None", "NONE"} {
+		It("does not export the records when OTEL_LOGS_EXPORTER is "+value+", even with an endpoint", func() {
+			receiver := startHTTPReceiver()
+			GinkgoT().Setenv("OTEL_LOGS_EXPORTER", value)
+			configureTestLogging(dest, nil, WithDisabledSampling(), WithOpenTelemetry())
+
+			Info("none-marker")
+			ForwardToOpenTelemetry([]byte(`{"level":"info","msg":"none-forwarded-marker"}`))
+
+			Expect(openTelemetryProvider).To(BeNil())
+			Expect(receiver.withBody("none-marker")).To(BeEmpty())
+			Expect(receiver.withBody("none-forwarded-marker")).To(BeEmpty())
+			Expect(destLines(dest, "none-marker")).To(HaveLen(1))
+		})
+	}
+
+	It("does not export the records when OTEL_SDK_DISABLED is true, even with an endpoint", func() {
+		receiver := startHTTPReceiver()
+		GinkgoT().Setenv("OTEL_SDK_DISABLED", "true")
+		configureTestLogging(dest, nil, WithDisabledSampling(), WithOpenTelemetry())
+
+		Info("disabled-marker")
+
+		Expect(openTelemetryProvider).To(BeNil())
+		Expect(receiver.withBody("disabled-marker")).To(BeEmpty())
+		Expect(destLines(dest, "disabled-marker")).To(HaveLen(1))
+	})
+
 	It("stops the export at the first shutdown, so that a stuck collector delays the exit only once", func() {
 		release := make(chan struct{})
 		server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
