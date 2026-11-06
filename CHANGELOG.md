@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.2](https://github.com/cloudnative-pg/machinery/compare/v0.6.1...v0.6.2) (2026-11-06)
+
+
+### Bug Fixes
+
+* **deps:** update all non-major go dependencies ([#332](https://github.com/cloudnative-pg/machinery/issues/332)) ([83a2746](https://github.com/cloudnative-pg/machinery/commit/83a2746cb44a4700718e2731f3729ce5acebfe63))
+* **deps:** update module github.com/onsi/ginkgo/v2 to v2.34.0 ([1ebe127](https://github.com/cloudnative-pg/machinery/commit/1ebe12793906b3281f83c16d4fd9ba572ea1a5ce))
+* **deps:** update module github.com/spf13/pflag to v1.1.0 ([8e08257](https://github.com/cloudnative-pg/machinery/commit/8e08257fb6577abe43c265ffb08be7f02928d326))
+* **deps:** update module github.com/xdg-go/scram to v1.3.0 ([823d249](https://github.com/cloudnative-pg/machinery/commit/823d249ec249738a3642c7b8ce10243296d3082c))
+* **deps:** update module github.com/xdg-go/scram to v1.4.0 ([fb4e781](https://github.com/cloudnative-pg/machinery/commit/fb4e7811b8e921a722d276786b38c29ae3ee37dd))
+* **deps:** update module k8s.io/apimachinery to v0.37.2 ([f8bfbf6](https://github.com/cloudnative-pg/machinery/commit/f8bfbf6c5775dfbbcd1b642548e560d4afcb06ea))
+
 ## [0.6.1](https://github.com/cloudnative-pg/machinery/compare/v0.6.0...v0.6.1) (2026-10-08)
 
 
