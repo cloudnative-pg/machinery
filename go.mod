@@ -10,7 +10,7 @@ require (
 	github.com/lib/pq v1.12.3
 	github.com/onsi/ginkgo/v2 v2.34.0
 	github.com/onsi/gomega v1.44.0
-	github.com/spf13/pflag v1.0.10
+	github.com/spf13/pflag v1.1.0
 	github.com/thoas/go-funk v0.9.3
 	github.com/xdg-go/scram v1.4.0
 	go.uber.org/zap v1.28.0
