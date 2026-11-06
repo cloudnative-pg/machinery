@@ -28,6 +28,8 @@ import (
 	"runtime"
 
 	"github.com/go-logr/logr"
+	"github.com/go-logr/zapr"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	ctrl "sigs.k8s.io/controller-runtime"
 	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
@@ -133,7 +135,16 @@ func (l *logger) Info(msg string, keysAndValues ...interface{}) {
 }
 
 func (l *logger) Warning(msg string, keysAndValues ...interface{}) {
-	l.enrich(false).V(int(-WarningLevel)).Info(msg, keysAndValues...)
+	cl := l.enrich(false)
+
+	// logr treats negative verbosity levels as zero, so log through zap at
+	// warning level. Skip one frame less, as this call bypasses logr.
+	if underlier, ok := cl.GetSink().(zapr.Underlier); ok {
+		underlier.GetUnderlying().WithOptions(zap.AddCallerSkip(-1)).Sugar().Warnw(msg, keysAndValues...)
+		return
+	}
+
+	cl.Info(msg, keysAndValues...)
 }
 
 func (l *logger) Debug(msg string, keysAndValues ...interface{}) {
