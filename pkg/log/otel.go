@@ -20,7 +20,6 @@ SPDX-License-Identifier: Apache-2.0
 package log
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -37,6 +36,7 @@ import (
 	uberzap "go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	kjson "sigs.k8s.io/json"
 )
 
 // openTelemetryScope is the instrumentation scope of the records emitted
@@ -120,9 +120,7 @@ func parseJSONRecord(line []byte) (zapcore.Entry, []zapcore.Field) {
 	ent := zapcore.Entry{Time: time.Now(), Level: InfoLevel}
 
 	var record map[string]any
-	decoder := json.NewDecoder(bytes.NewReader(line))
-	decoder.UseNumber()
-	if err := decoder.Decode(&record); err != nil {
+	if err := kjson.UnmarshalCaseSensitivePreserveInts(line, &record); err != nil {
 		ent.Message = string(line)
 		return ent, nil
 	}
@@ -147,15 +145,7 @@ func parseJSONRecord(line []byte) (zapcore.Entry, []zapcore.Field) {
 
 	fields := make([]zapcore.Field, 0, len(record))
 	for _, key := range slices.Sorted(maps.Keys(record)) {
-		value := record[key]
-		if number, ok := value.(json.Number); ok {
-			if integer, err := number.Int64(); err == nil {
-				value = integer
-			} else {
-				value, _ = number.Float64()
-			}
-		}
-		fields = append(fields, uberzap.Any(key, value))
+		fields = append(fields, uberzap.Any(key, record[key]))
 	}
 
 	return ent, fields
@@ -266,7 +256,7 @@ func toJSONFields(fields []zapcore.Field) []zapcore.Field {
 		}
 
 		var value any
-		if err := json.Unmarshal(content, &value); err != nil {
+		if err := kjson.UnmarshalCaseSensitivePreserveInts(content, &value); err != nil {
 			continue
 		}
 		result[i] = uberzap.Any(field.Key, value)

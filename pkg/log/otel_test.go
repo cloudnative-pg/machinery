@@ -391,6 +391,58 @@ var _ = Describe("ConfigureLogging with the OpenTelemetry export", func() {
 		Expect(destLines(dest, "marker")).To(BeEmpty())
 	})
 
+	It("exports the integers of structured values without rounding them, at any depth", func() {
+		receiver := startHTTPReceiver()
+		configureTestLogging(dest, nil, WithDisabledSampling(), WithOpenTelemetry())
+
+		type nested struct {
+			ID int64 `json:"id"`
+		}
+		type structured struct {
+			ID    int64    `json:"id"`
+			Inner nested   `json:"inner"`
+			List  []nested `json:"list"`
+		}
+		const big = int64(9007199254740993) // 2^53 + 1, not representable as a float64
+		Info("big-marker", "value", structured{ID: big, Inner: nested{ID: big}, List: []nested{{ID: big}}})
+		shutdownOpenTelemetry()
+
+		records := receiver.withBody("big-marker")
+		Expect(records).To(HaveLen(1))
+		value := records[0].attributes["value"].GetKvlistValue()
+		Expect(value.GetValues()).To(HaveLen(3))
+		for _, kv := range value.GetValues() {
+			switch kv.GetKey() {
+			case "id":
+				Expect(kv.GetValue().GetIntValue()).To(Equal(big))
+			case "inner":
+				Expect(kv.GetValue().GetKvlistValue().GetValues()[0].GetValue().GetIntValue()).To(Equal(big))
+			case "list":
+				inner := kv.GetValue().GetArrayValue().GetValues()[0].GetKvlistValue()
+				Expect(inner.GetValues()[0].GetValue().GetIntValue()).To(Equal(big))
+			}
+		}
+	})
+
+	It("exports the integers of the forwarded records without rounding them, at any depth", func() {
+		receiver := startHTTPReceiver()
+		configureTestLogging(dest, nil, WithDisabledSampling(), WithOpenTelemetry())
+
+		const big = int64(9007199254740993) // 2^53 + 1, not representable as a float64
+		ForwardToOpenTelemetry([]byte(`{"level":"info","msg":"forwarded-big-marker","id":9007199254740993,` +
+			`"inner":{"id":9007199254740993},"list":[{"id":9007199254740993}],"ratio":0.5}`))
+		shutdownOpenTelemetry()
+
+		records := receiver.withBody("forwarded-big-marker")
+		Expect(records).To(HaveLen(1))
+		attributes := records[0].attributes
+		Expect(attributes["id"].GetIntValue()).To(Equal(big))
+		Expect(attributes["inner"].GetKvlistValue().GetValues()[0].GetValue().GetIntValue()).To(Equal(big))
+		list := attributes["list"].GetArrayValue().GetValues()[0].GetKvlistValue()
+		Expect(list.GetValues()[0].GetValue().GetIntValue()).To(Equal(big))
+		Expect(attributes["ratio"].GetDoubleValue()).To(Equal(0.5))
+	})
+
 	It("stops the export at the first shutdown, so that a stuck collector delays the exit only once", func() {
 		release := make(chan struct{})
 		server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
