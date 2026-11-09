@@ -14,7 +14,7 @@ require (
 	github.com/thoas/go-funk v0.9.3
 	github.com/xdg-go/scram v1.4.0
 	go.uber.org/zap v1.28.0
-	golang.org/x/sys v0.49.0
+	golang.org/x/sys v0.50.0
 	k8s.io/apimachinery v0.37.2
 	k8s.io/klog/v2 v2.140.0
 	sigs.k8s.io/controller-runtime v0.25.2
