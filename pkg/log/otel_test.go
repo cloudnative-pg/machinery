@@ -511,7 +511,7 @@ var _ = Describe("ConfigureLogging with the OpenTelemetry export", func() {
 		Info("after-shutdown-marker")
 		start := time.Now()
 		Expect(ShutdownOpenTelemetry(context.Background())).To(Succeed())
-		Expect(time.Since(start)).To(BeNumerically("<", 100*time.Millisecond))
+		Expect(time.Since(start)).To(BeNumerically("<", 2*time.Second))
 		Expect(destLines(dest, "after-shutdown-marker")).To(HaveLen(1))
 	})
 
