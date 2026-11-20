@@ -71,7 +71,7 @@ func SetTruncateDestination(truncate bool) {
 func (l *Flags) AddFlags(flags *pflag.FlagSet) {
 	loggingFlagSet := &flag.FlagSet{}
 	loggingFlagSet.StringVar(&logLevel, "log-level", "info",
-		"the desired log level, one of error, info, debug and trace")
+		"the desired log level, one of error, warning, info, debug and trace")
 	loggingFlagSet.StringVar(&logDestination, "log-destination", "",
 		"where the log stream will be written")
 	loggingFlagSet.BoolVar(&truncateDestination, "log-truncate-destination", false,
