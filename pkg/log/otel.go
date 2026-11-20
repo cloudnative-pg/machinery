@@ -64,7 +64,9 @@ var (
 // selects between "http/protobuf", the default, and "grpc". The records
 // are exported at the configured log level, in the background: when the
 // collector cannot keep up, they are dropped instead of blocking the
-// caller. Call ShutdownOpenTelemetry before the process exits.
+// caller. Call ShutdownOpenTelemetry before the process exits. Configure
+// the logging once: a later call replaces the export without stopping the
+// previous one, and is not safe to run while records are being forwarded.
 //
 // It also replaces the global error handler of OpenTelemetry, which covers
 // all its signals, with one that writes the errors only to the log
@@ -172,6 +174,8 @@ func parseJSONRecord(line []byte) (zapcore.Entry, []zapcore.Field) {
 	return ent, fields
 }
 
+// isOpenTelemetryConfigured tells whether the environment asks to export the
+// logs
 func isOpenTelemetryConfigured() bool {
 	// OTEL_SDK_DISABLED turns off every signal, while "none" is the standard
 	// way to turn off the export of the logs only, even when the endpoint is
@@ -232,6 +236,8 @@ func handleOpenTelemetryErrors(destination zapcore.Core) {
 	}))
 }
 
+// newOpenTelemetryExporter creates the OTLP exporter selected by the
+// protocol variables
 func newOpenTelemetryExporter() (sdklog.Exporter, error) {
 	protocol := os.Getenv("OTEL_EXPORTER_OTLP_LOGS_PROTOCOL")
 	if protocol == "" {
@@ -253,17 +259,19 @@ func newOpenTelemetryExporter() (sdklog.Exporter, error) {
 // debug and trace levels to the zap debug level, which the bridge
 // understands, and it encodes reflected values in JSON and back, exporting
 // structs as maps, with the same keys they have on the log destination.
-// It adds itself in Check, because a tee writes every core with the entry
-// of the first one, so the level must be mapped in Write.
+// A tee writes every core with the entry of the first one, so the level
+// cannot be mapped in Check: Write maps it.
 type openTelemetryCore struct {
 	zapcore.LevelEnabler
 	core zapcore.Core
 }
 
+// With returns a core with the fields added, as JSON values
 func (c *openTelemetryCore) With(fields []zapcore.Field) zapcore.Core {
 	return &openTelemetryCore{LevelEnabler: c.LevelEnabler, core: c.core.With(toJSONFields(fields))}
 }
 
+// Check adds the core to the entry when its level is enabled
 func (c *openTelemetryCore) Check(ent zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
 	if c.Enabled(ent.Level) {
 		return ce.AddCore(ent, c)
@@ -272,11 +280,14 @@ func (c *openTelemetryCore) Check(ent zapcore.Entry, ce *zapcore.CheckedEntry) *
 	return ce
 }
 
+// Write exports the record, mapping the custom levels to the debug one
 func (c *openTelemetryCore) Write(ent zapcore.Entry, fields []zapcore.Field) error {
 	ent.Level = max(ent.Level, zapcore.DebugLevel)
 	return c.core.Write(ent, toJSONFields(fields))
 }
 
+// Sync does nothing, as the bridge buffers nothing: ShutdownOpenTelemetry
+// flushes the queue
 func (c *openTelemetryCore) Sync() error {
 	return c.core.Sync()
 }
