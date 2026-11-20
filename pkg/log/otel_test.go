@@ -223,6 +223,21 @@ var _ = Describe("ConfigureLogging with the OpenTelemetry export", func() {
 		}
 	})
 
+	It("exports the warnings once, with the warning severity", func() {
+		receiver := startHTTPReceiver()
+		configureTestLogging(dest, []string{"--log-level", "warning"}, WithOpenTelemetry())
+
+		Info("info-marker")
+		Warning("warning-marker", "key", "value")
+		shutdownOpenTelemetry()
+
+		Expect(receiver.withBody("info-marker")).To(BeEmpty())
+		records := receiver.withBody("warning-marker")
+		Expect(records).To(HaveLen(1))
+		Expect(records[0].severity).To(Equal(logspb.SeverityNumber_SEVERITY_NUMBER_WARN))
+		Expect(records[0].attributes["key"].GetStringValue()).To(Equal("value"))
+	})
+
 	It("exports the records via OTLP/HTTP with their severity and structured values", func() {
 		receiver := startHTTPReceiver()
 		configureTestLogging(dest, nil, WithDisabledSampling(), WithOpenTelemetry())
