@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/contrib/bridges/otelzap"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
 	otellog "go.opentelemetry.io/otel/log"
@@ -64,6 +65,11 @@ var (
 // are exported at the configured log level, in the background: when the
 // collector cannot keep up, they are dropped instead of blocking the
 // caller. Call ShutdownOpenTelemetry before the process exits.
+//
+// It also replaces the global error handler of OpenTelemetry, which covers
+// all its signals, with one that writes the errors only to the log
+// destination. A caller that wants its own handler sets it after
+// ConfigureLogging, and must not log through this package.
 func WithOpenTelemetry() ConfigureOption {
 	return func(o *configureOptions) {
 		o.openTelemetry = true
@@ -76,7 +82,8 @@ func WithOpenTelemetry() ConfigureOption {
 // their resource and exporter selection. The records are exported at the
 // configured log level. The caller owns the provider and shuts it down
 // before the process exits, as ShutdownOpenTelemetry ignores it. This
-// option takes precedence over WithOpenTelemetry.
+// option takes precedence over WithOpenTelemetry, and replaces the global
+// error handler of OpenTelemetry in the same way.
 func WithOpenTelemetryLoggerProvider(provider otellog.LoggerProvider) ConfigureOption {
 	return func(o *configureOptions) {
 		o.openTelemetryLoggerProvider = provider
@@ -195,9 +202,22 @@ func teeToOpenTelemetry(provider otellog.LoggerProvider, level zapcore.Level) za
 			// The log destination is written first: its encoder replaces the
 			// Kubernetes objects in the shared fields with their reference,
 			// which is what this core then exports
+			handleOpenTelemetryErrors(c)
+
 			return zapcore.NewTee(c, core)
 		}))
 	}
+}
+
+// handleOpenTelemetryErrors writes the errors of the OpenTelemetry SDK, such
+// as a failed export, only to the log destination. The default handler
+// prints them with the standard logger, which is redirected to the tee: a
+// failed export would be exported, fail and be logged again.
+func handleOpenTelemetryErrors(destination zapcore.Core) {
+	logger := uberzap.New(destination)
+	otel.SetErrorHandler(otel.ErrorHandlerFunc(func(err error) {
+		logger.Error("OpenTelemetry error", uberzap.Error(err))
+	}))
 }
 
 func newOpenTelemetryExporter() (sdklog.Exporter, error) {

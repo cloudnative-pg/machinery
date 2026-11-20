@@ -34,6 +34,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/otel"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	collogspb "go.opentelemetry.io/proto/otlp/collector/logs/v1"
 	commonpb "go.opentelemetry.io/proto/otlp/common/v1"
@@ -540,5 +541,32 @@ var _ = Describe("ConfigureLogging with the OpenTelemetry export", func() {
 		Expect(receiver.withBody("unsupported-protocol-marker")).To(BeEmpty())
 		Expect(openTelemetryForwarder).To(BeNil())
 		Expect(destLines(dest, "unsupported-protocol-marker")).To(HaveLen(1))
+	})
+
+	It("writes the errors of the OpenTelemetry SDK only to the log destination", func() {
+		receiver := startHTTPReceiver()
+		configureTestLogging(dest, nil, WithDisabledSampling(), WithOpenTelemetry())
+
+		otel.Handle(errors.New("sdk-error-marker"))
+		Info("after-marker")
+		shutdownOpenTelemetry()
+
+		Expect(destLines(dest, "sdk-error-marker")).To(HaveLen(1))
+		Expect(receiver.withBody("after-marker")).To(HaveLen(1))
+		receiver.mu.Lock()
+		defer receiver.mu.Unlock()
+		Expect(receiver.records).To(HaveLen(1), "the errors of the export must not be exported")
+	})
+
+	It("writes the errors of the OpenTelemetry SDK only to the log destination with the provider of the caller", func() {
+		exporter := &memoryExporter{}
+		provider := sdklog.NewLoggerProvider(sdklog.WithProcessor(sdklog.NewSimpleProcessor(exporter)))
+		DeferCleanup(provider.Shutdown, context.Background())
+		configureTestLogging(dest, nil, WithDisabledSampling(), WithOpenTelemetryLoggerProvider(provider))
+
+		otel.Handle(errors.New("sdk-error-marker"))
+
+		Expect(destLines(dest, "sdk-error-marker")).To(HaveLen(1))
+		Expect(exporter.exported()).To(BeEmpty())
 	})
 })
