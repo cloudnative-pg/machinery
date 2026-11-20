@@ -70,6 +70,16 @@ var _ = Describe("Warning", func() {
 		)))
 	})
 
+	It("encodes the values as the other levels do", func() {
+		l, buf := newJSONLogger(DebugLevel)
+
+		l.Warning("a warning", "marshaler", marshaler{})
+		l.Info("an info", "marshaler", marshaler{})
+
+		Expect(entries(buf)).To(HaveEach(HaveKeyWithValue(
+			"marshaler", HaveKeyWithValue("a", BeEquivalentTo(3)))))
+	})
+
 	It("keeps the values and the name of the logger", func() {
 		l, buf := newJSONLogger(DebugLevel)
 
@@ -138,6 +148,11 @@ var _ = Describe("Warning", func() {
 		Expect(sink.levels).To(ConsistOf(0))
 	})
 })
+
+// marshaler is a logr.Marshaler, only encoded properly by zapr
+type marshaler struct{}
+
+func (marshaler) MarshalLog() interface{} { return map[string]int{"a": 3} }
 
 // infoSink is a logr.LogSink not supporting slog, recording the messages
 // logged at info level and their verbosity levels

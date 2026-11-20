@@ -135,16 +135,17 @@ func (l *logger) Info(msg string, keysAndValues ...interface{}) {
 }
 
 func (l *logger) Warning(msg string, keysAndValues ...interface{}) {
-	cl := l.enrich(false)
+	// Attach the values through logr, so they are encoded as in the other
+	// levels, then log through zap, as logr clamps negative levels to zero.
+	cl := l.enrich(false).WithValues(keysAndValues...)
 
-	// logr treats negative verbosity levels as zero, so log through zap at
-	// warning level. Skip one frame less, as this call bypasses logr.
+	// Skip one frame less, as this call bypasses logr.
 	if underlier, ok := cl.GetSink().(zapr.Underlier); ok {
-		underlier.GetUnderlying().WithOptions(zap.AddCallerSkip(-1)).Sugar().Warnw(msg, keysAndValues...)
+		underlier.GetUnderlying().WithOptions(zap.AddCallerSkip(-1)).Warn(msg)
 		return
 	}
 
-	cl.Info(msg, keysAndValues...)
+	cl.Info(msg)
 }
 
 func (l *logger) Debug(msg string, keysAndValues ...interface{}) {
