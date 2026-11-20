@@ -188,6 +188,18 @@ var _ = Describe("ConfigureLogging sampling behavior", func() {
 		Expect(destLines(dest, "error-marker")).To(HaveLen(1))
 	})
 
+	It("logs the warnings at warning level when the log level is warning", func() {
+		configureTestLogging(dest, []string{"--log-level", "warning"})
+
+		Info("info-marker")
+		Warning("warning-marker")
+
+		Expect(destLines(dest, "info-marker")).To(BeEmpty())
+		lines := destLines(dest, "warning-marker")
+		Expect(lines).To(HaveLen(1))
+		Expect(lines[0]).To(ContainSubstring(`"level":"warning"`))
+	})
+
 	It("keeps the trace level fully functional when sampling is disabled", func() {
 		// at debug/trace the controller-runtime builder never installs the
 		// sampler, so here the level restoration wraps a core that is

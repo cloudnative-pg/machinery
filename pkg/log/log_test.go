@@ -30,6 +30,7 @@ import (
 	"github.com/go-logr/logr"
 	uberzap "go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -78,6 +79,23 @@ var _ = Describe("Warning", func() {
 
 		Expect(entries(buf)).To(HaveEach(HaveKeyWithValue(
 			"marshaler", HaveKeyWithValue("a", BeEquivalentTo(3)))))
+	})
+
+	It("logs Kubernetes objects as a reference, as the other levels do", func() {
+		l, buf := newJSONLogger(DebugLevel)
+		secret := &unstructured.Unstructured{Object: map[string]interface{}{
+			"apiVersion": "v1",
+			"kind":       "Secret",
+			"metadata":   map[string]interface{}{"name": "s", "namespace": "ns"},
+			"data":       map[string]interface{}{"key": "c2VjcmV0"},
+		}}
+
+		l.Warning("a warning", "secret", secret)
+		l.Info("an info", "secret", secret)
+
+		Expect(buf.String()).NotTo(ContainSubstring("c2VjcmV0"))
+		Expect(entries(buf)).To(HaveEach(HaveKeyWithValue("secret",
+			HaveKeyWithValue("name", "s"))))
 	})
 
 	It("keeps the values and the name of the logger", func() {

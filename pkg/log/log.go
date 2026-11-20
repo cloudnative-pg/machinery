@@ -135,17 +135,51 @@ func (l *logger) Info(msg string, keysAndValues ...interface{}) {
 }
 
 func (l *logger) Warning(msg string, keysAndValues ...interface{}) {
-	// Attach the values through logr, so they are encoded as in the other
-	// levels, then log through zap, as logr clamps negative levels to zero.
-	cl := l.enrich(false).WithValues(keysAndValues...)
+	// The empty WithValues resolves a delegating sink to the real one.
+	cl := l.enrich(false).WithValues()
 
-	// Skip one frame less, as this call bypasses logr.
+	// logr clamps negative levels to zero, so a Warning would be an Info.
+	// Log through logr anyway, to encode the values as the other levels
+	// do, on a zap logger writing the info entries at warning level. The
+	// zapr options of the original logger are not kept.
 	if underlier, ok := cl.GetSink().(zapr.Underlier); ok {
-		underlier.GetUnderlying().WithOptions(zap.AddCallerSkip(-1)).Warn(msg)
-		return
+		zapLogger := underlier.GetUnderlying()
+		if !zapLogger.Core().Enabled(WarningLevel) {
+			return
+		}
+
+		cl = zapr.NewLogger(zapLogger.WithOptions(
+			// The new zapr logger skips two more frames, keep one for this method
+			zap.AddCallerSkip(-1),
+			zap.WrapCore(func(c zapcore.Core) zapcore.Core { return warningCore{c} }),
+		))
 	}
 
-	cl.Info(msg)
+	cl.Info(msg, keysAndValues...)
+}
+
+// warningCore writes the info entries at warning level
+type warningCore struct{ zapcore.Core }
+
+// Enabled reports whether the entries are enabled, using the warning level for the info ones
+func (c warningCore) Enabled(level zapcore.Level) bool {
+	if level == InfoLevel {
+		level = WarningLevel
+	}
+	return c.Core.Enabled(level)
+}
+
+// With adds the fields to the wrapped core, keeping the wrapper
+func (c warningCore) With(fields []zapcore.Field) zapcore.Core {
+	return warningCore{c.Core.With(fields)}
+}
+
+// Check rewrites the level of the info entries to warning before checking them
+func (c warningCore) Check(entry zapcore.Entry, checked *zapcore.CheckedEntry) *zapcore.CheckedEntry {
+	if entry.Level == InfoLevel {
+		entry.Level = WarningLevel
+	}
+	return c.Core.Check(entry, checked)
 }
 
 func (l *logger) Debug(msg string, keysAndValues ...interface{}) {
