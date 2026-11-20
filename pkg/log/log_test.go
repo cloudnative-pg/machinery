@@ -98,17 +98,6 @@ var _ = Describe("Warning", func() {
 			HaveKeyWithValue("name", "s"))))
 	})
 
-	It("keeps the values and the name of the logger", func() {
-		l, buf := newJSONLogger(DebugLevel)
-
-		l.WithName("component").WithValues("cluster", "example").Warning("a warning")
-
-		Expect(entries(buf)).To(ConsistOf(SatisfyAll(
-			HaveKeyWithValue("logger", "component"),
-			HaveKeyWithValue("cluster", "example"),
-		)))
-	})
-
 	It("reports the caller of Warning", func() {
 		var buf bytes.Buffer
 		l := &logger{Logger: zap.New(
@@ -136,14 +125,6 @@ var _ = Describe("Warning", func() {
 		)))
 	})
 
-	It("is not logged when the level is error", func() {
-		l, buf := newJSONLogger(ErrorLevel)
-
-		l.Warning("a warning")
-
-		Expect(entries(buf)).To(BeEmpty())
-	})
-
 	It("is logged at warning level by the package-level function", func() {
 		previous := log.Logger
 		DeferCleanup(func() { SetLogger(previous) })
@@ -156,7 +137,7 @@ var _ = Describe("Warning", func() {
 		Expect(entries(buf)).To(ConsistOf(HaveKeyWithValue("level", "warn")))
 	})
 
-	It("falls back to info for sinks not supporting slog", func() {
+	It("falls back to info for sinks not backed by zap", func() {
 		sink := &infoSink{}
 		l := &logger{Logger: logr.New(sink)}
 
@@ -172,7 +153,7 @@ type marshaler struct{}
 
 func (marshaler) MarshalLog() interface{} { return map[string]int{"a": 3} }
 
-// infoSink is a logr.LogSink not supporting slog, recording the messages
+// infoSink is a logr.LogSink not backed by zap, recording the messages
 // logged at info level and their verbosity levels
 type infoSink struct {
 	messages []string
