@@ -365,6 +365,7 @@ var _ = Describe("ConfigureLogging with the OpenTelemetry export", func() {
 			`"elapsedWalTime":0.5,"options":{"compression":"gzip"},"stacktrace":"main.main\n\t/main.go:1"}`))
 		ForwardToOpenTelemetry([]byte(`{"level":"debug","msg":"forwarded-debug-marker"}`))
 		ForwardToOpenTelemetry([]byte(`not-json-marker`))
+		ForwardToOpenTelemetry([]byte(`null`))
 		shutdownOpenTelemetry()
 
 		records := receiver.withBody("forwarded-marker")
@@ -388,8 +389,28 @@ var _ = Describe("ConfigureLogging with the OpenTelemetry export", func() {
 		unparsed := receiver.withBody("not-json-marker")
 		Expect(unparsed).To(HaveLen(1))
 		Expect(unparsed[0].severity).To(Equal(logspb.SeverityNumber_SEVERITY_NUMBER_INFO))
+		Expect(receiver.withBody("null")).To(HaveLen(1),
+			"a line that is the JSON literal null is exported as a message")
 
 		Expect(destLines(dest, "marker")).To(BeEmpty())
+	})
+
+	It("reads the time and level of a forwarded record from the remapped keys", func() {
+		receiver := startHTTPReceiver()
+		configureTestLogging(dest, []string{"--log-field-timestamp", "timestamp", "--log-field-level", "severity"},
+			WithDisabledSampling(), WithOpenTelemetry())
+		DeferCleanup(func() { logfieldsRemap.TimeKey, logfieldsRemap.LevelKey = "", "" })
+
+		ForwardToOpenTelemetry([]byte(`{"severity":"error","timestamp":"2026-10-28T10:00:00.123456789Z",` +
+			`"msg":"remapped-marker"}`))
+		shutdownOpenTelemetry()
+
+		records := receiver.withBody("remapped-marker")
+		Expect(records).To(HaveLen(1))
+		Expect(records[0].time).To(BeTemporally("==", time.Date(2026, 10, 28, 10, 0, 0, 123456789, time.UTC)))
+		Expect(records[0].severity).To(Equal(logspb.SeverityNumber_SEVERITY_NUMBER_ERROR))
+		Expect(records[0].attributes).ToNot(HaveKey("severity"))
+		Expect(records[0].attributes).ToNot(HaveKey("timestamp"))
 	})
 
 	It("exports the integers of structured values without rounding them, at any depth", func() {

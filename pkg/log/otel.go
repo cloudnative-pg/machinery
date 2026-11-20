@@ -104,12 +104,16 @@ func ShutdownOpenTelemetry(ctx context.Context) error {
 }
 
 // ForwardToOpenTelemetry exports, without writing it on the log
-// destination, a record that another process wrote in JSON with the
-// default keys of the encoder, such as a process spawned by this one whose
-// output is already written there. The record keeps its time, level,
+// destination, a record that another process wrote in JSON, such as a
+// process spawned by this one whose output is already written there. The
+// process is expected to use the same time and level keys as this one, as
+// set by GetFieldsRemapFlags. The record keeps its time, level,
 // logger name and fields, while a line that is not a JSON object is
-// exported as an info message. It is a no-op when the OpenTelemetry export
-// is disabled.
+// exported as an info message. The line is parsed whole and queued as is,
+// so the caller bounds its size. Records below the configured level are
+// dropped, and times must be RFC3339. The process must not export on its
+// own, or its records are exported twice. It is a no-op when the
+// OpenTelemetry export is disabled.
 func ForwardToOpenTelemetry(line []byte) {
 	if openTelemetryForwarder == nil {
 		return
@@ -121,30 +125,38 @@ func ForwardToOpenTelemetry(line []byte) {
 	}
 }
 
-// parseJSONRecord decodes a record written by the JSON encoder with its
-// default keys, mapping the error to the attribute of the semantic
-// conventions, as the OpenTelemetry bridge does for the records of this
-// process
+// parseJSONRecord decodes a record written by the JSON encoder, mapping the
+// error to the attribute of the semantic conventions, as the OpenTelemetry
+// bridge does for the records of this process
 func parseJSONRecord(line []byte) (zapcore.Entry, []zapcore.Field) {
 	ent := zapcore.Entry{Time: time.Now(), Level: InfoLevel}
 
 	var record map[string]any
-	if err := kjson.UnmarshalCaseSensitivePreserveInts(line, &record); err != nil {
+	// the JSON literal null decodes without error into a nil map
+	if err := kjson.UnmarshalCaseSensitivePreserveInts(line, &record); err != nil || record == nil {
 		ent.Message = string(line)
 		return ent, nil
 	}
 
-	if ts, ok := record["ts"].(string); ok {
+	timeKey, levelKey := "ts", "level"
+	if logfieldsRemap.TimeKey != "" {
+		timeKey = logfieldsRemap.TimeKey
+	}
+	if logfieldsRemap.LevelKey != "" {
+		levelKey = logfieldsRemap.LevelKey
+	}
+
+	if ts, ok := record[timeKey].(string); ok {
 		if parsed, err := time.Parse(time.RFC3339Nano, ts); err == nil {
 			ent.Time = parsed
 		}
 	}
-	level, _ := record["level"].(string)
+	level, _ := record[levelKey].(string)
 	ent.Level = getLogLevel(level)
 	ent.LoggerName, _ = record["logger"].(string)
 	ent.Message, _ = record["msg"].(string)
 	ent.Stack, _ = record["stacktrace"].(string)
-	for _, key := range []string{"ts", "level", "logger", "msg", "stacktrace"} {
+	for _, key := range []string{timeKey, levelKey, "logger", "msg", "stacktrace"} {
 		delete(record, key)
 	}
 	if err, ok := record["error"]; ok {
