@@ -25,7 +25,7 @@ require (
 	golang.org/x/sys v0.50.0
 	google.golang.org/grpc v1.85.0
 	google.golang.org/protobuf v1.36.12
-	k8s.io/apimachinery v0.37.2
+	k8s.io/apimachinery v0.37.3
 	k8s.io/klog/v2 v2.140.0
 	sigs.k8s.io/controller-runtime v0.25.3
 	sigs.k8s.io/json v0.0.0-20260909141634-11ed52e25bc5
