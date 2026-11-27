@@ -21,7 +21,10 @@ package log
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"maps"
 	"os"
@@ -37,6 +40,7 @@ import (
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	uberzap "go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"google.golang.org/grpc/credentials"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	kjson "sigs.k8s.io/json"
 )
@@ -244,14 +248,97 @@ func newOpenTelemetryExporter() (sdklog.Exporter, error) {
 		protocol = os.Getenv("OTEL_EXPORTER_OTLP_PROTOCOL")
 	}
 
+	tlsConfig, err := newOpenTelemetryTLSConfig()
+	if err != nil {
+		return nil, err
+	}
+
 	switch protocol {
 	case "", "http/protobuf":
-		return otlploghttp.New(context.Background())
+		var opts []otlploghttp.Option
+		if tlsConfig != nil {
+			opts = append(opts, otlploghttp.WithTLSClientConfig(tlsConfig))
+		}
+		return otlploghttp.New(context.Background(), opts...)
 	case "grpc":
-		return otlploggrpc.New(context.Background())
+		var opts []otlploggrpc.Option
+		if tlsConfig != nil {
+			opts = append(opts, otlploggrpc.WithTLSCredentials(credentials.NewTLS(tlsConfig)))
+		}
+		return otlploggrpc.New(context.Background(), opts...)
 	default:
 		return nil, fmt.Errorf("unsupported OTLP protocol %q", protocol)
 	}
+}
+
+// newOpenTelemetryTLSConfig returns the TLS configuration of an exporter with
+// a client certificate, nil when the environment sets none. The SDK reads
+// the client certificate once, while this configuration reads it again at
+// every new connection, so that a rotated certificate is used without
+// restarting the process. The server certificate authority is read once.
+func newOpenTelemetryTLSConfig() (*tls.Config, error) {
+	certFile, keyFile := firstOpenTelemetryClientKeyPair()
+	if certFile == "" {
+		return nil, nil
+	}
+
+	config := &tls.Config{
+		GetClientCertificate: func(request *tls.CertificateRequestInfo) (*tls.Certificate, error) {
+			certificate, err := tls.LoadX509KeyPair(certFile, keyFile)
+			if err != nil {
+				return nil, err
+			}
+
+			// A certificate the server does not accept is not presented,
+			// as the TLS library does with the one the SDK reads: a
+			// server with an optional client authentication keeps
+			// accepting the connection
+			if request.SupportsCertificate(&certificate) != nil {
+				return &tls.Certificate{}, nil
+			}
+
+			return &certificate, nil
+		},
+	}
+
+	for _, name := range []string{
+		"OTEL_EXPORTER_OTLP_LOGS_CERTIFICATE",
+		"OTEL_EXPORTER_OTLP_CERTIFICATE",
+	} {
+		path := os.Getenv(name)
+		if path == "" {
+			continue
+		}
+
+		content, err := os.ReadFile(path) // #nosec G304 G703 -- the path comes from the OTLP standard variable
+		if err != nil {
+			return nil, err
+		}
+		config.RootCAs = x509.NewCertPool()
+		if !config.RootCAs.AppendCertsFromPEM(content) {
+			return nil, errors.New("certificate not added from " + path)
+		}
+		break
+	}
+
+	return config, nil
+}
+
+// firstOpenTelemetryClientKeyPair returns the files of the client
+// certificate and key, taking the logs variables before the generic ones as
+// the SDK does, and empty when no pair is complete
+func firstOpenTelemetryClientKeyPair() (string, string) {
+	for _, names := range [][2]string{
+		{"OTEL_EXPORTER_OTLP_LOGS_CLIENT_CERTIFICATE", "OTEL_EXPORTER_OTLP_LOGS_CLIENT_KEY"},
+		{"OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE", "OTEL_EXPORTER_OTLP_CLIENT_KEY"},
+	} {
+		certFile, keyFile := os.Getenv(names[0]), os.Getenv(names[1])
+		if certFile != "" && keyFile != "" {
+			return certFile, keyFile
+		}
+	}
+
+	return "", ""
 }
 
 // openTelemetryCore adapts the OpenTelemetry zap bridge to this package:

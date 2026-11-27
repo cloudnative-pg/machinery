@@ -21,9 +21,16 @@ package log
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/pem"
 	"errors"
 	"io"
+	"math/big"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -40,6 +47,7 @@ import (
 	commonpb "go.opentelemetry.io/proto/otlp/common/v1"
 	logspb "go.opentelemetry.io/proto/otlp/logs/v1"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/protobuf/proto"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -152,6 +160,169 @@ func startGRPCReceiver() *otlpReceiver {
 	DeferCleanup(server.Stop)
 	GinkgoT().Setenv("OTEL_EXPORTER_OTLP_PROTOCOL", "grpc")
 	GinkgoT().Setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://"+listener.Addr().String())
+	return receiver
+}
+
+// testCA signs the certificates of the mTLS receiver and of its clients. A
+// receiver tells its clients the names of the authorities it accepts, so
+// each authority has its own.
+type testCA struct {
+	certificate *x509.Certificate
+	key         *ecdsa.PrivateKey
+}
+
+func newTestCA(name string) *testCA {
+	GinkgoHelper()
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	Expect(err).ToNot(HaveOccurred())
+	template := &x509.Certificate{
+		SerialNumber:          big.NewInt(1),
+		Subject:               pkix.Name{CommonName: name},
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(time.Hour),
+		IsCA:                  true,
+		BasicConstraintsValid: true,
+		KeyUsage:              x509.KeyUsageCertSign,
+	}
+	der, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
+	Expect(err).ToNot(HaveOccurred())
+	certificate, err := x509.ParseCertificate(der)
+	Expect(err).ToNot(HaveOccurred())
+	return &testCA{certificate: certificate, key: key}
+}
+
+// issue returns the PEM encoded certificate with the given serial, valid for
+// a server and for a client, and its key
+func (ca *testCA) issue(serial int64) ([]byte, []byte) {
+	GinkgoHelper()
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	Expect(err).ToNot(HaveOccurred())
+	template := &x509.Certificate{
+		SerialNumber: big.NewInt(serial),
+		Subject:      pkix.Name{CommonName: "test"},
+		NotBefore:    time.Now().Add(-time.Hour),
+		NotAfter:     time.Now().Add(time.Hour),
+		KeyUsage:     x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
+		IPAddresses:  []net.IP{net.ParseIP("127.0.0.1")},
+	}
+	der, err := x509.CreateCertificate(rand.Reader, template, ca.certificate, &key.PublicKey, ca.key)
+	Expect(err).ToNot(HaveOccurred())
+	keyDER, err := x509.MarshalECPrivateKey(key)
+	Expect(err).ToNot(HaveOccurred())
+	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}),
+		pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: keyDER})
+}
+
+// writeTLSFiles writes in the directory the certificate authority, as ca.crt,
+// and a client certificate with the given serial and its key, as tls.crt and
+// tls.key
+func (ca *testCA) writeTLSFiles(dir string, serial int64) {
+	GinkgoHelper()
+	certificate, key := ca.issue(serial)
+	Expect(os.WriteFile(filepath.Join(dir, "ca.crt"),
+		pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: ca.certificate.Raw}), 0o600)).To(Succeed())
+	Expect(os.WriteFile(filepath.Join(dir, "tls.crt"), certificate, 0o600)).To(Succeed())
+	Expect(os.WriteFile(filepath.Join(dir, "tls.key"), key, 0o600)).To(Succeed())
+}
+
+// setTLSVariables points the OTLP variables having the given prefix at the
+// files written by writeTLSFiles
+func setTLSVariables(prefix, dir string) {
+	GinkgoT().Setenv(prefix+"CERTIFICATE", filepath.Join(dir, "ca.crt"))
+	GinkgoT().Setenv(prefix+"CLIENT_CERTIFICATE", filepath.Join(dir, "tls.crt"))
+	GinkgoT().Setenv(prefix+"CLIENT_KEY", filepath.Join(dir, "tls.key"))
+}
+
+// mtlsReceiver is an OTLP receiver asking for a client certificate. It
+// records the serial of the certificate presented at every connection, zero
+// when the client presents none.
+type mtlsReceiver struct {
+	*otlpReceiver
+	net.Listener
+
+	mu          sync.Mutex
+	serials     []int64
+	connections []net.Conn
+}
+
+// Accept tracks the connections for dropConnections
+func (r *mtlsReceiver) Accept() (net.Conn, error) {
+	connection, err := r.Listener.Accept()
+	if err == nil {
+		r.mu.Lock()
+		r.connections = append(r.connections, connection)
+		r.mu.Unlock()
+	}
+	return connection, err
+}
+
+// dropConnections closes the connections of the exporter, as a restart of
+// the collector does, so that the next export opens a new one
+func (r *mtlsReceiver) dropConnections() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	for _, connection := range r.connections {
+		_ = connection.Close()
+	}
+	r.connections = nil
+}
+
+func (r *mtlsReceiver) clientSerials() []int64 {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	return slices.Clone(r.serials)
+}
+
+// startMTLSReceiver points the exporter of the given protocol at a new
+// receiver, whose certificate is issued by the given authority, which is
+// also the one it accepts for the clients
+func startMTLSReceiver(protocol string, ca *testCA, clientAuth tls.ClientAuthType) *mtlsReceiver {
+	GinkgoHelper()
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	Expect(err).ToNot(HaveOccurred())
+	receiver := &mtlsReceiver{otlpReceiver: &otlpReceiver{}, Listener: listener}
+
+	certificate, err := tls.X509KeyPair(ca.issue(100))
+	Expect(err).ToNot(HaveOccurred())
+	clientCAs := x509.NewCertPool()
+	clientCAs.AddCert(ca.certificate)
+	config := &tls.Config{
+		MinVersion:   tls.VersionTLS13,
+		Certificates: []tls.Certificate{certificate},
+		ClientCAs:    clientCAs,
+		ClientAuth:   clientAuth,
+		VerifyConnection: func(state tls.ConnectionState) error {
+			receiver.mu.Lock()
+			defer receiver.mu.Unlock()
+
+			var serial int64
+			if len(state.PeerCertificates) > 0 {
+				serial = state.PeerCertificates[0].SerialNumber.Int64()
+			}
+			receiver.serials = append(receiver.serials, serial)
+			return nil
+		},
+	}
+
+	if protocol == "grpc" {
+		server := grpc.NewServer(grpc.Creds(credentials.NewTLS(config)))
+		collogspb.RegisterLogsServiceServer(server, receiver)
+		go func() {
+			_ = server.Serve(receiver)
+		}()
+		DeferCleanup(server.Stop)
+	} else {
+		server := httptest.NewUnstartedServer(receiver)
+		server.Listener = receiver
+		server.TLS = config
+		server.StartTLS()
+		DeferCleanup(server.Close)
+	}
+	GinkgoT().Setenv("OTEL_EXPORTER_OTLP_PROTOCOL", protocol)
+	GinkgoT().Setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "https://"+listener.Addr().String())
 	return receiver
 }
 
@@ -578,6 +749,84 @@ var _ = Describe("ConfigureLogging with the OpenTelemetry export", func() {
 		Expect(openTelemetryForwarder).To(BeNil())
 		Expect(destLines(dest, "unsupported-protocol-marker")).To(HaveLen(1))
 	})
+
+	DescribeTable("presents the client certificate on disk at every new connection, so that a rotated one is used",
+		func(protocol, prefix string) {
+			ca := newTestCA("collector")
+			dir := GinkgoT().TempDir()
+			ca.writeTLSFiles(dir, 1)
+			setTLSVariables(prefix, dir)
+			if prefix != "OTEL_EXPORTER_OTLP_" {
+				// The generic variables, that the ones of the signal override,
+				// point at an authority the receiver does not know
+				decoy := GinkgoT().TempDir()
+				newTestCA("unknown").writeTLSFiles(decoy, 9)
+				setTLSVariables("OTEL_EXPORTER_OTLP_", decoy)
+			}
+			receiver := startMTLSReceiver(protocol, ca, tls.RequireAndVerifyClientCert)
+			configureTestLogging(dest, nil, WithDisabledSampling(), WithOpenTelemetry())
+
+			Info("before-rotation-marker")
+			Expect(openTelemetryProvider.ForceFlush(context.Background())).To(Succeed())
+			Expect(receiver.clientSerials()).To(Equal([]int64{1}))
+
+			ca.writeTLSFiles(dir, 2)
+			receiver.dropConnections()
+			Eventually(func() []int64 {
+				// The export that finds the connection closed may be lost
+				Info("after-rotation-marker")
+				_ = openTelemetryProvider.ForceFlush(context.Background())
+				return receiver.clientSerials()
+			}).WithTimeout(time.Minute).Should(HaveLen(2))
+			Expect(receiver.clientSerials()).To(Equal([]int64{1, 2}))
+			Expect(receiver.withBody("after-rotation-marker")).ToNot(BeEmpty())
+		},
+		Entry("via OTLP/gRPC, with the variables of the logs signal", "grpc", "OTEL_EXPORTER_OTLP_LOGS_"),
+		Entry("via OTLP/HTTP, with the generic variables", "http/protobuf", "OTEL_EXPORTER_OTLP_"),
+	)
+
+	It("does not present a client certificate that the collector does not accept", func() {
+		ca := newTestCA("collector")
+		dir := GinkgoT().TempDir()
+		newTestCA("unknown").writeTLSFiles(dir, 1)
+		setTLSVariables("OTEL_EXPORTER_OTLP_", dir)
+		caFile := filepath.Join(GinkgoT().TempDir(), "ca.crt")
+		Expect(os.WriteFile(caFile,
+			pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: ca.certificate.Raw}), 0o600)).To(Succeed())
+		GinkgoT().Setenv("OTEL_EXPORTER_OTLP_CERTIFICATE", caFile)
+		receiver := startMTLSReceiver("http/protobuf", ca, tls.VerifyClientCertIfGiven)
+		configureTestLogging(dest, nil, WithDisabledSampling(), WithOpenTelemetry())
+
+		Info("optional-client-certificate-marker")
+		shutdownOpenTelemetry()
+
+		Expect(receiver.withBody("optional-client-certificate-marker")).To(HaveLen(1))
+		Expect(receiver.clientSerials()).To(Equal([]int64{0}))
+	})
+
+	DescribeTable("keeps logging to the log destination when the certificate authority of the collector is",
+		func(content []byte) {
+			receiver := startHTTPReceiver()
+			dir := GinkgoT().TempDir()
+			newTestCA("collector").writeTLSFiles(dir, 1)
+			setTLSVariables("OTEL_EXPORTER_OTLP_", dir)
+			if content == nil {
+				Expect(os.Remove(filepath.Join(dir, "ca.crt"))).To(Succeed())
+			} else {
+				Expect(os.WriteFile(filepath.Join(dir, "ca.crt"), content, 0o600)).To(Succeed())
+			}
+			configureTestLogging(dest, nil, WithDisabledSampling(), WithOpenTelemetry())
+
+			Info("unusable-authority-marker")
+			shutdownOpenTelemetry()
+
+			Expect(receiver.withBody("unusable-authority-marker")).To(BeEmpty())
+			Expect(openTelemetryForwarder).To(BeNil())
+			Expect(destLines(dest, "unusable-authority-marker")).To(HaveLen(1))
+		},
+		Entry("a missing file", nil),
+		Entry("not a certificate", []byte("not a certificate")),
+	)
 
 	It("writes the errors of the OpenTelemetry SDK only to the log destination", func() {
 		receiver := startHTTPReceiver()
