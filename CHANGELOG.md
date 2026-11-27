@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/cloudnative-pg/machinery/compare/v0.7.0...v0.7.1) (2026-11-27)
+
+
+### Bug Fixes
+
+* **deps:** update module k8s.io/apimachinery to v0.37.3 ([4feee0c](https://github.com/cloudnative-pg/machinery/commit/4feee0c5933917df5c1f7f573eb5e6560151d222))
+
 ## [0.7.0](https://github.com/cloudnative-pg/machinery/compare/v0.6.1...v0.7.0) (2026-11-20)
 
 
